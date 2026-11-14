@@ -7,6 +7,7 @@ var EDITOR = (function () {
   var _pickerTarget  = null;
   var _chordDragSrc  = null;
   var _blockDragSrc  = null;
+  var _collapsedBlocks = {};
   var _libFilter = 'all';
 
   // ── Utility ────────────────────────────────────────────────────────────
@@ -248,6 +249,7 @@ var EDITOR = (function () {
         '<div class="hdr-icon-btn" id="copyBtn" onclick="APP.toggleCopy()" title="העתק">' +
           '<svg width="14" height="14"><use href="#ico-copy"/></svg>' +
         '</div>' +
+        '<span class="collapse-all-btn" id="collapseAllBtn" onclick="EDITOR.collapseAll()">קפל הכל</span>' +
       '</div>' +
       '<div class="sync-row"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">שמור</span></div>' +
       '<div class="arr-strip">' + arrHtml + '</div>' +
@@ -295,7 +297,9 @@ var EDITOR = (function () {
       '<span style="color:var(--t3);font-size:.82rem">+ שורה</span>' +
       '</div>';
 
-    return '<div class="block" data-bi="' + bi + '"' +
+    var isCollapsed = !!_collapsedBlocks[blk.id];
+    return '<div class="block' + (isCollapsed ? ' collapsed' : '') + '" data-bi="' + bi + '" data-block-id="' + blk.id + '"' +
+      ' style="border-left-color:' + c.col + '"' +
       ' draggable="true"' +
       ' ondragstart="EDITOR.blockDragStart(event,' + bi + ')"' +
       ' ondragend="EDITOR.blockDragEnd(event)"' +
@@ -307,10 +311,11 @@ var EDITOR = (function () {
         '<span class="block-pill" style="background:' + c.bg + ';color:' + c.col + ';cursor:pointer" onclick="APP.openBlockTypePicker(' + bi + ')" title="שנה סוג קטע">' +
           _esc(blk.label || _blockTypeLabel(blk.type)) +
         '</span>' +
-        '<span class="dup-btn" onclick="EDITOR.duplicateBlock(' + bi + ')">' +
+        '<span class="dup-btn" onclick="EDITOR.duplicateBlock(' + bi + ')" title="שכפל (Ctrl+D)">' +
           '<svg width="11" height="11"><use href="#ico-dup"/></svg>שכפל' +
         '</span>' +
         (occ > 1 ? '<span class="block-occ">' + occ + 'x</span>' : '') +
+        '<span class="block-collapse-btn" onclick="EDITOR.toggleBlockCollapse(\'' + blk.id + '\')" title="קפל/פתח">▼</span>' +
       '</div>' +
       '<div class="lines">' + linesHtml + '</div>' +
       '</div>';
@@ -385,15 +390,40 @@ var EDITOR = (function () {
     }).join('');
   }
 
+  function toggleBlockCollapse(blockId) {
+    _collapsedBlocks[blockId] = !_collapsedBlocks[blockId];
+    var el = document.querySelector('[data-block-id="' + blockId + '"]');
+    if (el) el.classList.toggle('collapsed', !!_collapsedBlocks[blockId]);
+  }
+
+  function collapseAll() {
+    if (!_doc) return;
+    var blocks = _doc.blocks || [];
+    var anyExpanded = blocks.some(function (b) { return !_collapsedBlocks[b.id]; });
+    blocks.forEach(function (b) { _collapsedBlocks[b.id] = anyExpanded; });
+    document.querySelectorAll('.block').forEach(function (el) {
+      var id = el.dataset.blockId;
+      if (id) el.classList.toggle('collapsed', !!_collapsedBlocks[id]);
+    });
+    var btn = document.getElementById('collapseAllBtn');
+    if (btn) btn.textContent = anyExpanded ? 'פתח הכל' : 'קפל הכל';
+  }
+
   function handleLineKey(e, bi, li) {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    addLine(bi, li);
-    setTimeout(function () {
-      var row = document.querySelector('[data-bi="' + bi + '"][data-li="' + (li + 1) + '"]');
-      var inp = row && row.querySelector('.lyric-input');
-      if (inp) inp.focus();
-    }, 40);
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addLine(bi, li);
+      setTimeout(function () {
+        var row = document.querySelector('[data-bi="' + bi + '"][data-li="' + (li + 1) + '"]');
+        var inp = row && row.querySelector('.lyric-input');
+        if (inp) inp.focus();
+      }, 40);
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+      e.preventDefault();
+      duplicateBlock(bi);
+    }
   }
 
   function updateLyrics(input, bi, li) {
@@ -1137,11 +1167,13 @@ var EDITOR = (function () {
     chordDragOver:   chordDragOver,
     chordDragLeave:  chordDragLeave,
     chordDrop:       chordDrop,
-    blockDragStart:  blockDragStart,
-    blockDragEnd:    blockDragEnd,
-    blockDragOver:   blockDragOver,
-    blockDragLeave:  blockDragLeave,
-    blockDrop:       blockDrop,
+    blockDragStart:      blockDragStart,
+    blockDragEnd:        blockDragEnd,
+    blockDragOver:       blockDragOver,
+    blockDragLeave:      blockDragLeave,
+    blockDrop:           blockDrop,
+    toggleBlockCollapse: toggleBlockCollapse,
+    collapseAll:         collapseAll,
     getScreen:       function () { return _screen; },
     getCurrentDoc:   function () { return _doc; },
     getCurrentSong:  function () { return _song; },

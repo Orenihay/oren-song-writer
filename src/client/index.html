@@ -102,7 +102,7 @@ button, input { font-family:inherit; }
 .lyric-input { direction:rtl; text-align:right; }
 
 /* ג”€ג”€ Word-level chord editing ג”€ג”€ */
-.line-pair { background:var(--card); border-radius:7px; padding:2px 6px 6px; margin-bottom:12px; border:1px solid var(--bdr2); }
+.line-pair { background:var(--card); border-radius:7px; padding:2px 4px 4px; margin-bottom:6px; border:1px solid var(--bdr2); }
 .line-pair:focus-within { border-color:var(--em); }
 .word-chips-row { display:flex; flex-wrap:wrap; gap:0 1px; padding:4px 2px 0; min-height:26px; align-items:flex-end; cursor:default; direction:rtl; }
 .word-chip { display:inline-flex; flex-direction:column; align-items:center; cursor:pointer; border-radius:4px; padding:1px 3px; transition:background .1s; }
@@ -191,25 +191,33 @@ button, input { font-family:inherit; }
 }
 
 /* ג”€ג”€ Editor scroll ג”€ג”€ */
-.editor-scroll { padding:14px 14px 100px; }
+.editor-scroll { padding:10px 10px 100px; }
 
 /* ג”€ג”€ Block ג”€ג”€ */
-.block { margin-bottom:18px; border:1px solid var(--bdr); border-radius:var(--r); background:var(--card); overflow:hidden; transition:opacity .12s, transform .12s, border-top .08s; }
+.block { margin-bottom:10px; border:1px solid var(--bdr); border-left:3px solid transparent; border-radius:var(--r); background:var(--card); overflow:hidden; transition:opacity .12s, transform .12s, border-top .08s; }
 .block.block-dragging { opacity:.3; transform:scale(.99); pointer-events:none; }
 .block.block-drag-over { border-top:3px solid var(--em); }
-.block-hdr { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--card2); border-bottom:1px solid var(--bdr2); }
-.block-drag-handle { cursor:grab; color:var(--t3); padding:2px 4px; border-radius:4px; font-size:1rem; line-height:1; user-select:none; transition:color .1s; }
+.block-hdr { display:flex; align-items:center; gap:6px; padding:6px 10px; background:var(--card2); border-bottom:1px solid var(--bdr2); }
+.block-drag-handle { cursor:grab; color:var(--t3); padding:2px 3px; border-radius:4px; font-size:.9rem; line-height:1; user-select:none; transition:color .1s; }
 .block-drag-handle:hover { color:var(--em-lt); background:var(--em-dim); }
 .block-drag-handle:active { cursor:grabbing; }
 .block-pill { font-size:.72rem; font-weight:600; padding:3px 9px; border-radius:5px; }
 .dup-btn {
   display:flex; align-items:center; gap:4px; font-size:.72rem; color:var(--em-lt);
-  cursor:pointer; padding:3px 8px; border-radius:5px;
+  cursor:pointer; padding:3px 7px; border-radius:5px;
   transition:background .12s;
 }
 .dup-btn:hover { background:var(--em-dim); }
-.block-occ { margin-right:auto; font-size:.68rem; color:var(--t2); }
-.lines { padding:10px 12px 6px; }
+.block-occ { font-size:.68rem; color:var(--t2); }
+.block-collapse-btn { cursor:pointer; color:var(--t3); padding:2px 5px; border-radius:4px; font-size:.75rem; line-height:1; user-select:none; transition:color .1s, transform .15s; margin-right:auto; }
+.block-collapse-btn:hover { color:var(--em-lt); background:var(--em-dim); }
+.block.collapsed .block-collapse-btn { transform:rotate(-90deg); }
+.block.collapsed .lines { display:none; }
+.block.collapsed .add-line-row { display:none; }
+.block.collapsed .block-hdr { border-bottom:none; }
+.collapse-all-btn { font-size:.72rem; color:var(--t2); cursor:pointer; padding:3px 8px; border-radius:5px; border:1px solid var(--bdr); transition:background .1s, color .1s; white-space:nowrap; }
+.collapse-all-btn:hover { background:var(--em-dim); color:var(--em-lt); border-color:var(--em); }
+.lines { padding:6px 10px 4px; }
 
 /* ג”€ג”€ Chord line (segment-based, flex RTL) ג”€ג”€ */
 .chord-line { display:flex; flex-wrap:wrap; align-items:flex-start; direction:rtl; min-height:40px; }
@@ -680,10 +688,10 @@ button, input { font-family:inherit; }
   .picker-drag-bar { margin:12px auto 8px; }
 
   /* Blocks */
-  .block-hdr  { padding:9px 12px; }
+  .block-hdr  { padding:7px 10px; }
   .block-pill { font-size:.75rem; padding:4px 10px; }
-  .lines      { padding:10px 10px 8px; }
-  .line-pair  { padding:3px 8px 8px; margin-bottom:14px; }
+  .lines      { padding:5px 8px 3px; }
+  .line-pair  { padding:2px 6px 6px; margin-bottom:8px; }
   .line-del-btn { opacity:.5; width:28px; height:28px; }
 
   /* Arrangement nodes */
