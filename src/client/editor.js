@@ -7,6 +7,7 @@ var EDITOR = (function () {
   var _pickerTarget  = null;
   var _chordDragSrc  = null;
   var _blockDragSrc  = null;
+  var _lineDragSrc   = null;
   var _collapsedBlocks = {};
   var _libFilter = 'all';
 
@@ -127,10 +128,20 @@ var EDITOR = (function () {
     _songs  = songs || [];
     if (filter !== undefined) _libFilter = filter;
 
+    // Playlists tab → render playlists screen instead
+    if (_libFilter === 'playlists') {
+      DB.getAllPlaylists().then(function (pls) { renderPlaylists(pls); });
+      return;
+    }
+
     // Apply filter
     var filtered = _songs.filter(function (s) {
       if (_libFilter === 'all')    return true;
       if (_libFilter === 'pinned') return s.Pinned === 'true' || s.Pinned === true;
+      if (_libFilter.slice(0,4) === 'tag:') {
+        var tag = _libFilter.slice(4).toLowerCase();
+        return (s.Tags || '').toLowerCase().split(',').some(function (t) { return t.trim() === tag; });
+      }
       return (s.Status || 'draft') === _libFilter;
     });
 
@@ -149,8 +160,12 @@ var EDITOR = (function () {
       : '';
 
     var listHtml = list.map(function (s, i) {
-      var si  = _statusInfo(s.Status);
-      var upd = _relTime(s.UpdatedAt);
+      var si   = _statusInfo(s.Status);
+      var upd  = _relTime(s.UpdatedAt);
+      var tags = s.Tags ? s.Tags.split(',').map(function (t) { return t.trim(); }).filter(Boolean) : [];
+      var tagsHtml = tags.length
+        ? '<div class="song-tags">' + tags.map(function (t) { return '<span class="tag-chip">' + _esc(t) + '</span>'; }).join('') + '</div>'
+        : '';
       return '<div class="song-item list-anim" style="--i:' + i + '" onclick="APP.openSong(\'' + s.SongID + '\')">' +
         '<div class="song-ico"><svg width="17" height="17" style="color:var(--em-lt)"><use href="#ico-music"/></svg></div>' +
         '<div class="song-info">' +
@@ -159,6 +174,7 @@ var EDITOR = (function () {
             (s.Key ? '<span class="song-key">' + _esc(s.Key) + '</span>' : '') +
             (upd   ? '<span class="song-upd"> · ' + upd + '</span>' : '') +
           '</div>' +
+          tagsHtml +
         '</div>' +
         '<span class="badge ' + si.cls + '">' + si.lbl + '</span>' +
         '<div class="song-menu-btn" onclick="APP.openSongCtx(event,\'' + s.SongID + '\')">' +
@@ -178,10 +194,11 @@ var EDITOR = (function () {
 
     // Filter tabs
     var tabs = [
-      { id:'all',    lbl:'הכל' },
-      { id:'pinned', lbl:'נעוצים' },
-      { id:'wip',    lbl:'בכתיבה' },
-      { id:'done',   lbl:'גמור' },
+      { id:'all',       lbl:'הכל' },
+      { id:'pinned',    lbl:'נעוצים' },
+      { id:'wip',       lbl:'בכתיבה' },
+      { id:'done',      lbl:'גמור' },
+      { id:'playlists', lbl:'סטליסטים' },
     ];
     var tabsHtml = '<div class="lib-tabs">' + tabs.map(function (t) {
       return '<div class="lib-tab' + (_libFilter === t.id ? ' on' : '') + '" onclick="APP.setLibFilter(\'' + t.id + '\')">' + t.lbl + '</div>';
@@ -203,6 +220,54 @@ var EDITOR = (function () {
       '<div class="song-list">' + listHtml + emptyHtml + '</div>' +
       '<div class="fab" onclick="APP.newSong()">' +
         '<svg width="14" height="14"><use href="#ico-plus"/></svg> שיר חדש' +
+      '</div>';
+
+    _setBottomNav('library');
+  }
+
+  // ── Playlists screen ───────────────────────────────────────────────────
+  function renderPlaylists(pls) {
+    _screen = 'playlists';
+    var tabs = [
+      { id:'all',lbl:'הכל' },{ id:'pinned',lbl:'נעוצים' },{ id:'wip',lbl:'בכתיבה' },
+      { id:'done',lbl:'גמור' },{ id:'playlists',lbl:'סטליסטים' },
+    ];
+    var tabsHtml = '<div class="lib-tabs">' + tabs.map(function (t) {
+      return '<div class="lib-tab' + (t.id === 'playlists' ? ' on' : '') + '" onclick="APP.setLibFilter(\'' + t.id + '\')">' + t.lbl + '</div>';
+    }).join('') + '</div>';
+
+    var plsHtml = (pls || []).map(function (pl) {
+      var count = (pl.songs || []).length;
+      return '<div class="pl-item" onclick="APP.openPlaylist(\'' + pl.id + '\')">' +
+        '<div class="pl-ico"><svg width="17" height="17" style="color:var(--em-lt)"><use href="#ico-music"/></svg></div>' +
+        '<div class="pl-info">' +
+          '<div class="pl-name">' + _esc(pl.name) + '</div>' +
+          '<div class="pl-count">' + count + ' שירים</div>' +
+        '</div>' +
+        '<div class="song-menu-btn" onclick="APP.openPlaylistCtx(event,\'' + pl.id + '\')" style="pointer-events:all">' +
+          '<svg width="14" height="14"><use href="#ico-dots"/></svg>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+
+    var emptyHtml = !(pls || []).length
+      ? '<div class="empty-state"><div class="empty-title">אין סטליסטים</div>' +
+        '<div class="empty-sub">צור סטליסט לניהול שירים להופעה</div>' +
+        '<div class="empty-create-btn" onclick="APP.newPlaylist()">+ סטליסט חדש</div></div>'
+      : '';
+
+    document.getElementById('root').innerHTML =
+      '<div class="app-hdr screen-anim">' +
+        '<div class="hdr-icon-btn" title="חיפוש" onclick="APP.openSearch()"><svg width="17" height="17"><use href="#ico-search"/></svg></div>' +
+        '<div class="app-logo-inline">' + _EMBLEM +
+          '<span class="ali-oren">Oren</span><span class="ali-book">&nbsp;Song Book</span>' +
+        '</div>' +
+        '<div class="hdr-icon-btn" title="סטליסט חדש" onclick="APP.newPlaylist()"><svg width="17" height="17"><use href="#ico-plus"/></svg></div>' +
+      '</div>' +
+      tabsHtml +
+      '<div class="song-list">' + plsHtml + emptyHtml + '</div>' +
+      '<div class="fab" onclick="APP.newPlaylist()">' +
+        '<svg width="14" height="14"><use href="#ico-plus"/></svg> סטליסט חדש' +
       '</div>';
 
     _setBottomNav('library');
@@ -249,9 +314,18 @@ var EDITOR = (function () {
         '<div class="hdr-icon-btn" id="copyBtn" onclick="APP.toggleCopy()" title="העתק">' +
           '<svg width="14" height="14"><use href="#ico-copy"/></svg>' +
         '</div>' +
+        '<div class="hdr-icon-btn" id="memoBtn" onclick="APP.openMemoPanel()" title="הקלטה קולית">' +
+          '<svg width="14" height="14"><use href="#ico-mic"/></svg>' +
+        '</div>' +
         '<span class="collapse-all-btn" id="collapseAllBtn" onclick="EDITOR.collapseAll()">קפל הכל</span>' +
       '</div>' +
       '<div class="sync-row"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">שמור</span></div>' +
+      '<div id="memoPanel" style="display:none" class="memo-panel">' +
+        '<div class="memo-panel-row">' +
+          '<button class="memo-rec-btn" id="memoRecBtn" onclick="APP.toggleMemo()">⏺ הקלט</button>' +
+          '<div class="memo-player-wrap" id="memoPlayerWrap" style="display:none"></div>' +
+        '</div>' +
+      '</div>' +
       '<div class="arr-strip">' + arrHtml + '</div>' +
       '<div class="editor-scroll" id="editorScroll">' + blocksHtml + '</div>' +
       '<div class="copy-menu" id="copyMenu" style="display:none">' +
@@ -365,7 +439,14 @@ var EDITOR = (function () {
   }
 
   function _renderLine(ln, bi, li) {
-    return '<div class="line-pair" data-bi="' + bi + '" data-li="' + li + '">' +
+    return '<div class="line-pair" data-bi="' + bi + '" data-li="' + li + '"' +
+      ' draggable="true"' +
+      ' ondragstart="EDITOR.lineDragStart(event,' + bi + ',' + li + ')"' +
+      ' ondragend="EDITOR.lineDragEnd(event)"' +
+      ' ondragover="EDITOR.lineDragOver(event,' + bi + ',' + li + ')"' +
+      ' ondragleave="EDITOR.lineDragLeave(event)"' +
+      ' ondrop="EDITOR.lineDrop(event,' + bi + ',' + li + ')">' +
+      '<span class="line-drag-handle" title="גרור שורה">⠿</span>' +
       _buildWordChips(ln, bi, li) +
       '<div class="line-input-wrap">' +
         '<input type="text" class="lyric-input" dir="rtl" autocomplete="off"' +
@@ -667,6 +748,130 @@ var EDITOR = (function () {
         activeBi = null;
       });
     });
+  }
+
+  // ── Line drag between positions within a block ─────────────────────────
+  function lineDragStart(e, bi, li) {
+    if (!e.target.closest('.line-drag-handle')) { e.preventDefault(); return; }
+    _lineDragSrc = { bi: bi, li: li };
+    e.dataTransfer.effectAllowed = 'move';
+    e.stopPropagation();
+    e.currentTarget.classList.add('line-dragging');
+  }
+
+  function lineDragEnd(e) {
+    _lineDragSrc = null;
+    document.querySelectorAll('.line-dragging,.line-drag-over').forEach(function (el) {
+      el.classList.remove('line-dragging', 'line-drag-over');
+    });
+  }
+
+  function lineDragOver(e, bi, li) {
+    if (!_lineDragSrc) return;
+    if (_lineDragSrc.bi !== bi) return;
+    if (_lineDragSrc.li === li) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.classList.add('line-drag-over');
+  }
+
+  function lineDragLeave(e) {
+    e.currentTarget.classList.remove('line-drag-over');
+  }
+
+  function lineDrop(e, bi, li) {
+    e.stopPropagation();
+    e.currentTarget.classList.remove('line-drag-over');
+    var src = _lineDragSrc;
+    _lineDragSrc = null;
+    if (!src || src.bi !== bi || src.li === li) return;
+    _moveLine(src.bi, src.li, bi, li);
+  }
+
+  function _moveLine(fromBi, fromLi, toBi, toLi) {
+    UNDO.push({ song: _song, doc: _docCopy() });
+    if (fromBi === toBi) {
+      var lines = _doc.blocks[fromBi].lines;
+      var moved = lines.splice(fromLi, 1)[0];
+      lines.splice(toLi > fromLi ? toLi - 1 : toLi, 0, moved);
+    } else {
+      var movedLine = _doc.blocks[fromBi].lines.splice(fromLi, 1)[0];
+      _doc.blocks[toBi].lines.splice(toLi, 0, movedLine);
+      if (!_doc.blocks[fromBi].lines.length) {
+        _doc.blocks[fromBi].lines.push({ lyrics: '', chords: [] });
+      }
+    }
+    renderEditor(_song, _doc);
+    APP.scheduleAutosave();
+  }
+
+  // ── Playlist detail screen ─────────────────────────────────────────────
+  function renderPlaylistDetail(pl, songs, allSongs) {
+    _screen = 'playlists';
+
+    var songsHtml = (songs || []).map(function (s, i) {
+      var si = _statusInfo(s.Status);
+      return '<div class="song-item list-anim" style="--i:' + i + '">' +
+        '<div class="pl-drag-handle" title="גרור">⠿</div>' +
+        '<div class="song-ico" onclick="APP.openSong(\'' + s.SongID + '\')">' +
+          '<svg width="17" height="17" style="color:var(--em-lt)"><use href="#ico-music"/></svg>' +
+        '</div>' +
+        '<div class="song-info" onclick="APP.openSong(\'' + s.SongID + '\')">' +
+          '<div class="song-title">' + _esc(s.Title) + '</div>' +
+          '<div class="song-meta">' + (s.Key ? '<span class="song-key">' + _esc(s.Key) + '</span>' : '') + '</div>' +
+        '</div>' +
+        '<span class="badge ' + si.cls + '">' + si.lbl + '</span>' +
+        '<div class="song-menu-btn" onclick="APP.removeFromPlaylist(\'' + pl.id + '\',\'' + s.SongID + '\')">' +
+          '<svg width="13" height="13"><use href="#ico-trash"/></svg>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+
+    var emptyHtml = !(songs || []).length
+      ? '<div class="empty-state">' +
+        '<div class="empty-title">הסטליסט ריק</div>' +
+        '<div class="empty-sub">הוסף שירים מהרשימה למטה</div>' +
+        '</div>'
+      : '';
+
+    // Add songs section — songs not yet in playlist
+    var existingIds = (pl.songs || []);
+    var addable = (allSongs || []).filter(function (s) { return existingIds.indexOf(s.SongID) < 0; });
+    var addHtml = addable.length
+      ? '<div class="section-lbl" style="padding:12px 16px 4px">הוסף שיר:</div>' +
+        addable.slice(0, 20).map(function (s) {
+          return '<div class="song-item" style="opacity:.7" onclick="APP.addSongToPlaylist(\'' + pl.id + '\',\'' + s.SongID + '\')">' +
+            '<div class="song-ico"><svg width="17" height="17" style="color:var(--t2)"><use href="#ico-music"/></svg></div>' +
+            '<div class="song-info"><div class="song-title">' + _esc(s.Title) + '</div></div>' +
+            '<span style="color:var(--em);font-size:1.1rem;padding-left:8px">+</span>' +
+            '</div>';
+        }).join('')
+      : '';
+
+    // Perf mode button for setlist
+    var perfBtn = songs.length
+      ? '<div class="fab" style="bottom:72px" onclick="APP.startSetlistPerf(' +
+          JSON.stringify(pl).replace(/"/g, '&quot;') + ',' +
+          JSON.stringify(songs.map(function(s){return s.SongID;})).replace(/"/g,'&quot;') +
+          ',0)"><svg width="14" height="14"><use href="#ico-play"/></svg> הפעל סטליסט</div>'
+      : '';
+
+    document.getElementById('root').innerHTML =
+      '<div class="app-hdr screen-anim">' +
+        '<div class="hdr-icon-btn" onclick="APP.setLibFilter(\'playlists\')">' +
+          '<svg width="18" height="18"><use href="#ico-back"/></svg>' +
+        '</div>' +
+        '<div class="app-logo-inline">' + _esc(pl.name) + '</div>' +
+        '<div class="hdr-icon-btn" title="הוסף שיר" onclick="document.getElementById(\'plAddSection\').scrollIntoView({behavior:\'smooth\'})">' +
+          '<svg width="17" height="17"><use href="#ico-plus"/></svg>' +
+        '</div>' +
+      '</div>' +
+      '<div class="section-lbl" style="padding:10px 16px 4px">שירים בסטליסט (' + (songs.length) + ')</div>' +
+      '<div class="song-list">' + songsHtml + emptyHtml + '</div>' +
+      '<div id="plAddSection">' + addHtml + '</div>' +
+      perfBtn;
+
+    _setBottomNav('library');
   }
 
   // ── Chord diagram data & renderer ─────────────────────────────────────
@@ -1174,6 +1379,13 @@ var EDITOR = (function () {
     blockDrop:           blockDrop,
     toggleBlockCollapse: toggleBlockCollapse,
     collapseAll:         collapseAll,
+    lineDragStart:       lineDragStart,
+    lineDragEnd:         lineDragEnd,
+    lineDragOver:        lineDragOver,
+    lineDragLeave:       lineDragLeave,
+    lineDrop:            lineDrop,
+    renderPlaylists:     renderPlaylists,
+    renderPlaylistDetail: renderPlaylistDetail,
     getScreen:       function () { return _screen; },
     getCurrentDoc:   function () { return _doc; },
     getCurrentSong:  function () { return _song; },

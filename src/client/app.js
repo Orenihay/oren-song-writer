@@ -294,6 +294,292 @@ var APP = {
     if (p && p.parentNode) p.parentNode.removeChild(p);
   },
 
+  // ── Playlist management ─────────────────────────────────────────────────
+  newPlaylist: function () {
+    var modal = document.getElementById('newPlaylistModal');
+    var input = document.getElementById('newPlaylistInput');
+    if (!modal) {
+      // Create modal dynamically if not in DOM
+      var m = document.createElement('div');
+      m.id = 'newPlaylistModal';
+      m.className = 'modal-overlay';
+      m.innerHTML =
+        '<div class="modal-box">' +
+          '<div class="modal-title">סטליסט חדש</div>' +
+          '<input id="newPlaylistInput" class="modal-input" type="text" dir="rtl" placeholder="שם הסטליסט..." autocomplete="off">' +
+          '<div class="modal-btns">' +
+            '<div class="modal-btn-sec" onclick="APP.cancelNewPlaylist()">ביטול</div>' +
+            '<div class="modal-btn-pri" onclick="APP.confirmNewPlaylist()">צור</div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(m);
+      modal = m;
+      input = document.getElementById('newPlaylistInput');
+      m.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') APP.confirmNewPlaylist();
+        if (e.key === 'Escape') APP.cancelNewPlaylist();
+      });
+    }
+    modal.style.display = 'flex';
+    if (input) { input.value = ''; input.style.borderColor = ''; setTimeout(function () { input.focus(); }, 60); }
+  },
+
+  cancelNewPlaylist: function () {
+    var modal = document.getElementById('newPlaylistModal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  confirmNewPlaylist: function () {
+    var modal = document.getElementById('newPlaylistModal');
+    var input = document.getElementById('newPlaylistInput');
+    var name  = (input ? input.value : '').trim();
+    if (!name) { if (input) { input.style.borderColor = '#f87171'; input.focus(); } return; }
+    if (modal) modal.style.display = 'none';
+    var pl = { id: 'pl_' + Date.now().toString(36), name: name, songs: [], createdAt: new Date().toISOString() };
+    DB.savePlaylist(pl).then(function () {
+      APP.showToast('סטליסט נוצר ✓', 'ok');
+      DB.getAllPlaylists().then(function (pls) { EDITOR.renderPlaylists(pls); });
+    });
+  },
+
+  openPlaylist: function (plId) {
+    DB.getPlaylist(plId).then(function (pl) {
+      if (!pl) return;
+      var allSongs = EDITOR.getSongs();
+      var plSongs  = (pl.songs || []).map(function (sid) {
+        return allSongs.find(function (s) { return s.SongID === sid; });
+      }).filter(Boolean);
+      EDITOR.renderPlaylistDetail(pl, plSongs, allSongs);
+    });
+  },
+
+  openPlaylistCtx: function (e, plId) {
+    if (e) e.stopPropagation();
+    APP.closeCtx();
+    var popup = document.createElement('div');
+    popup.id = 'songCtxPopup';
+    popup.className = 'ctx-popup';
+    var r = e && e.currentTarget ? e.currentTarget.getBoundingClientRect() : { bottom: 100, left: 100 };
+    var top  = Math.min(r.bottom + 4, window.innerHeight - 160);
+    var left = Math.max(4, Math.min(r.left - 120, window.innerWidth - 180));
+    popup.style.cssText = 'top:' + top + 'px;left:' + left + 'px';
+    popup.innerHTML =
+      '<div class="ctx-item" onclick="APP.renamePlaylist(\'' + plId + '\');APP.closeCtx()">' +
+        '<svg width="13" height="13"><use href="#ico-settings"/></svg> שנה שם' +
+      '</div>' +
+      '<div class="ctx-item danger" onclick="APP.deletePlaylist(\'' + plId + '\');APP.closeCtx()">' +
+        '<svg width="13" height="13"><use href="#ico-trash"/></svg> מחק סטליסט' +
+      '</div>';
+    document.body.appendChild(popup);
+    setTimeout(function () { document.addEventListener('click', APP.closeCtx, { once: true }); }, 50);
+  },
+
+  renamePlaylist: function (plId) {
+    DB.getPlaylist(plId).then(function (pl) {
+      if (!pl) return;
+      var newName = window.prompt ? window.prompt('שם חדש:', pl.name) : null;
+      if (!newName || !newName.trim()) return;
+      pl.name = newName.trim();
+      DB.savePlaylist(pl).then(function () {
+        APP.showToast('שם עודכן ✓', 'ok');
+        DB.getAllPlaylists().then(function (pls) { EDITOR.renderPlaylists(pls); });
+      });
+    });
+  },
+
+  deletePlaylist: function (plId) {
+    DB.deletePlaylist(plId).then(function () {
+      APP.showToast('סטליסט נמחק', 'ok');
+      DB.getAllPlaylists().then(function (pls) { EDITOR.renderPlaylists(pls); });
+    });
+  },
+
+  addSongToPlaylist: function (plId, songId) {
+    DB.getPlaylist(plId).then(function (pl) {
+      if (!pl) return;
+      if ((pl.songs || []).indexOf(songId) >= 0) { APP.showToast('השיר כבר בסטליסט', 'err'); return; }
+      pl.songs = (pl.songs || []).concat([songId]);
+      DB.savePlaylist(pl).then(function () {
+        APP.showToast('נוסף ✓', 'ok');
+        APP.openPlaylist(plId);
+      });
+    });
+  },
+
+  removeFromPlaylist: function (plId, songId) {
+    DB.getPlaylist(plId).then(function (pl) {
+      if (!pl) return;
+      pl.songs = (pl.songs || []).filter(function (s) { return s !== songId; });
+      DB.savePlaylist(pl).then(function () {
+        APP.showToast('הוסר ✓', 'ok');
+        APP.openPlaylist(plId);
+      });
+    });
+  },
+
+  openAddToPlaylistPicker: function (songId) {
+    DB.getAllPlaylists().then(function (pls) {
+      APP.closeCtx();
+      if (!pls.length) {
+        APP.showToast('אין סטליסטים — צור קודם', 'err');
+        return;
+      }
+      var popup = document.createElement('div');
+      popup.id = 'songCtxPopup';
+      popup.className = 'ctx-popup';
+      popup.style.cssText = 'top:120px;right:12px;left:auto;min-width:160px';
+      popup.innerHTML = '<div class="ctx-item" style="font-size:.75rem;color:var(--t2);cursor:default">הוסף לסטליסט:</div>' +
+        pls.map(function (pl) {
+          return '<div class="ctx-item" onclick="APP.addSongToPlaylist(\'' + pl.id + '\',\'' + songId + '\');APP.closeCtx()">' +
+            '<svg width="13" height="13"><use href="#ico-music"/></svg> ' + pl.name + '</div>';
+        }).join('');
+      document.body.appendChild(popup);
+      setTimeout(function () { document.addEventListener('click', APP.closeCtx, { once: true }); }, 50);
+    });
+  },
+
+  // ── Setlist performance navigation ──────────────────────────────────────
+  _perfPlaylist:    null,
+  _perfPlaylistIdx: 0,
+
+  startSetlistPerf: function (pl, songs, idx) {
+    APP._perfPlaylist    = { pl: pl, songs: songs };
+    APP._perfPlaylistIdx = idx || 0;
+    APP._loadSetlistSong(APP._perfPlaylistIdx);
+  },
+
+  _loadSetlistSong: function (idx) {
+    var pld = APP._perfPlaylist;
+    if (!pld || !pld.songs[idx]) return;
+    var song = pld.songs[idx];
+    var doc  = _parseDoc(song._doc);
+    _perfTranspose = 0;
+    APP.stopAutoScroll();
+    EDITOR.renderPerformance(song, doc, 0);
+    var prev = document.getElementById('perfPrevBtn');
+    var next = document.getElementById('perfNextBtn');
+    if (prev) prev.style.display = idx > 0 ? '' : 'none';
+    if (next) next.style.display = idx < pld.songs.length - 1 ? '' : 'none';
+    var tpVal = document.getElementById('perfTransposeVal');
+    if (tpVal) tpVal.textContent = '0';
+  },
+
+  setlistNext: function () {
+    if (!APP._perfPlaylist) return;
+    var newIdx = APP._perfPlaylistIdx + 1;
+    if (newIdx >= APP._perfPlaylist.songs.length) return;
+    APP._perfPlaylistIdx = newIdx;
+    APP._loadSetlistSong(newIdx);
+  },
+
+  setlistPrev: function () {
+    if (!APP._perfPlaylist) return;
+    var newIdx = APP._perfPlaylistIdx - 1;
+    if (newIdx < 0) return;
+    APP._perfPlaylistIdx = newIdx;
+    APP._loadSetlistSong(newIdx);
+  },
+
+  // ── Voice memo ───────────────────────────────────────────────────────────
+  _memoRecorder:   null,
+  _memoChunks:     [],
+  _memoIsRecording: false,
+
+  toggleMemo: function () {
+    if (APP._memoIsRecording) {
+      APP.stopMemo();
+    } else {
+      APP.startMemo();
+    }
+  },
+
+  startMemo: function () {
+    var song = EDITOR.getCurrentSong();
+    if (!song) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      APP.showToast('מיקרופון לא נתמך', 'err'); return;
+    }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      APP._memoChunks = [];
+      var options = MediaRecorder.isTypeSupported('audio/webm') ? { mimeType: 'audio/webm' } : {};
+      APP._memoRecorder = new MediaRecorder(stream, options);
+      APP._memoRecorder.ondataavailable = function (e) {
+        if (e.data && e.data.size > 0) APP._memoChunks.push(e.data);
+      };
+      APP._memoRecorder.onstop = function () {
+        var blob = new Blob(APP._memoChunks, { type: APP._memoRecorder.mimeType || 'audio/webm' });
+        var reader = new FileReader();
+        reader.onload = function () {
+          var songId = EDITOR.getCurrentSong() && EDITOR.getCurrentSong().SongID;
+          if (songId) {
+            DB.saveMemo(songId, reader.result).then(function () {
+              APP.showToast('הקלטה נשמרה ✓', 'ok');
+              APP._refreshMemoPlayer(songId);
+            });
+          }
+        };
+        reader.readAsDataURL(blob);
+        stream.getTracks().forEach(function (t) { t.stop(); });
+      };
+      APP._memoRecorder.start(1000);
+      APP._memoIsRecording = true;
+      APP._refreshMemoBtn(true);
+      APP.showToast('מקליט...', 'ok');
+    }).catch(function () {
+      APP.showToast('לא ניתן לגשת למיקרופון', 'err');
+    });
+  },
+
+  stopMemo: function () {
+    if (APP._memoRecorder && APP._memoIsRecording) {
+      APP._memoRecorder.stop();
+      APP._memoIsRecording = false;
+      APP._refreshMemoBtn(false);
+    }
+  },
+
+  _refreshMemoBtn: function (recording) {
+    var btn = document.getElementById('memoBtn');
+    if (!btn) return;
+    btn.classList.toggle('recording', recording);
+    btn.title = recording ? 'עצור הקלטה' : 'הקלטה קולית';
+  },
+
+  _refreshMemoPlayer: function (songId) {
+    DB.getMemo(songId).then(function (memo) {
+      var wrap = document.getElementById('memoPlayerWrap');
+      if (!wrap) return;
+      if (memo && memo.data) {
+        wrap.innerHTML =
+          '<audio class="memo-audio" controls src="' + memo.data + '"></audio>' +
+          '<div class="memo-del-btn" onclick="APP.deleteMemo()" title="מחק הקלטה">🗑</div>';
+        wrap.style.display = 'flex';
+      } else {
+        wrap.innerHTML = '';
+        wrap.style.display = 'none';
+      }
+    });
+  },
+
+  deleteMemo: function () {
+    var song = EDITOR.getCurrentSong();
+    if (!song) return;
+    DB.deleteMemo(song.SongID).then(function () {
+      APP.showToast('הקלטה נמחקה', 'ok');
+      APP._refreshMemoPlayer(song.SongID);
+    });
+  },
+
+  openMemoPanel: function () {
+    var song = EDITOR.getCurrentSong();
+    if (!song) return;
+    var panel = document.getElementById('memoPanel');
+    if (!panel) return;
+    var open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    if (!open) APP._refreshMemoPlayer(song.SongID);
+  },
+
   // ── Song settings sheet ─────────────────────────────────────────────────
   openSongSettings: function (songIdOrNull) {
     var song = songIdOrNull
@@ -310,6 +596,7 @@ var APP = {
       Pinned:   song.Pinned === 'true' || song.Pinned === true,
       Writer:   song.Writer   || '',
       Composer: song.Composer || '',
+      Tags:     song.Tags     || '',
     };
 
     var titleEl = document.getElementById('sheetSongTitle');
@@ -319,8 +606,10 @@ var APP = {
 
     var writerEl   = document.getElementById('sheetWriter');
     var composerEl = document.getElementById('sheetComposer');
+    var tagsEl     = document.getElementById('sheetTags');
     if (writerEl)   writerEl.value   = _sheetState.Writer;
     if (composerEl) composerEl.value = _sheetState.Composer;
+    if (tagsEl)     tagsEl.value     = _sheetState.Tags;
 
     var el = document.getElementById('songSheet');
     if (el) el.style.display = 'block';
@@ -388,8 +677,10 @@ var APP = {
     // Read text fields from DOM before apply
     var writerEl   = document.getElementById('sheetWriter');
     var composerEl = document.getElementById('sheetComposer');
+    var tagsEl     = document.getElementById('sheetTags');
     if (writerEl)   _sheetState.Writer   = writerEl.value.trim();
     if (composerEl) _sheetState.Composer = composerEl.value.trim();
+    if (tagsEl)     _sheetState.Tags     = tagsEl.value.trim();
 
     // Find the song in DB if not current
     var apply = function (song) {
@@ -403,6 +694,7 @@ var APP = {
       song.Pinned   = String(_sheetState.Pinned);
       song.Writer   = _sheetState.Writer;
       song.Composer = _sheetState.Composer;
+      song.Tags     = _sheetState.Tags;
       song.UpdatedAt = new Date().toISOString();
 
       // Transpose chords if key changed and this is the current song

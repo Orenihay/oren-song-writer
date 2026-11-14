@@ -738,6 +738,80 @@ button, input { font-family:inherit; }
   .copy-opt  { padding:12px 14px; }
   .copy-opt-title { font-size:.9rem; }
 }
+
+/* ── Song tags ── */
+.song-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+.tag-chip {
+  font-size:.65rem; font-weight:600; padding:1px 7px; border-radius:999px;
+  background:rgba(167,139,250,.14); color:#a78bfa; border:1px solid rgba(167,139,250,.3);
+}
+
+/* ── Line drag handle ── */
+.line-drag-handle {
+  cursor:grab; color:var(--t3); font-size:.8rem; line-height:1;
+  padding:2px 2px; user-select:none; opacity:0; transition:opacity .12s, color .1s;
+  flex-shrink:0;
+}
+.line-pair:hover .line-drag-handle,
+.line-pair:focus-within .line-drag-handle { opacity:1; }
+.line-drag-handle:hover { color:var(--em-lt); }
+.line-pair.line-dragging { opacity:.35; }
+.line-pair.line-drag-over { border-top:2px solid var(--em-lt); }
+@media (hover:none) { .line-drag-handle { opacity:.5; } }
+
+/* ── Voice memo panel ── */
+.memo-panel {
+  background:var(--surf); border-bottom:1px solid var(--bdr); padding:8px 14px 10px;
+}
+.memo-panel-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.memo-rec-btn {
+  display:flex; align-items:center; gap:6px; padding:7px 14px; border-radius:8px;
+  background:rgba(239,68,68,.12); color:#f87171; border:1px solid rgba(239,68,68,.3);
+  cursor:pointer; font-family:inherit; font-size:.82rem; font-weight:600; transition:background .12s;
+}
+.memo-rec-btn:hover { background:rgba(239,68,68,.22); }
+.memo-rec-btn.recording { background:rgba(239,68,68,.3); animation:recPulse 1s ease-in-out infinite; }
+@keyframes recPulse { 0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.4)} 50%{box-shadow:0 0 0 6px rgba(248,113,113,0)} }
+.memo-player-wrap { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+.memo-audio { flex:1; min-width:0; height:36px; border-radius:8px; }
+.memo-del-btn { font-size:1rem; cursor:pointer; padding:4px; color:var(--t2); transition:color .12s; }
+.memo-del-btn:hover { color:#f87171; }
+.hdr-icon-btn#memoBtn.recording { color:#f87171; }
+
+/* ── Playlists ── */
+.pl-item {
+  display:flex; align-items:center; gap:10px; padding:12px 14px;
+  border-bottom:1px solid var(--bdr2); cursor:pointer; transition:background .12s;
+}
+.pl-item:hover { background:var(--card); }
+.pl-ico { flex-shrink:0; }
+.pl-info { flex:1; min-width:0; }
+.pl-name { font-size:.9rem; font-weight:500; }
+.pl-count { font-size:.72rem; color:var(--t2); margin-top:2px; }
+.pl-drag-handle {
+  cursor:grab; color:var(--t3); font-size:.85rem; padding:2px 3px; user-select:none;
+  flex-shrink:0; transition:color .1s;
+}
+.pl-drag-handle:hover { color:var(--em-lt); }
+
+/* ── New playlist modal extra buttons ── */
+.modal-btns { display:flex; gap:8px; margin-top:16px; justify-content:flex-start; }
+.modal-btn-pri { padding:9px 18px; border-radius:7px; background:var(--em); color:#fff; font-size:.88rem; font-weight:600; cursor:pointer; }
+.modal-btn-pri:hover { background:var(--em-lt); }
+.modal-btn-sec { padding:9px 14px; border-radius:7px; color:var(--t2); font-size:.88rem; cursor:pointer; }
+.modal-btn-sec:hover { background:var(--em-dim); }
+
+/* ── Setlist prev/next ── */
+.perf-setlist-nav {
+  display:flex; align-items:center; gap:6px;
+}
+.perf-nav-btn {
+  width:30px; height:30px; border-radius:7px; border:1px solid var(--bdr);
+  background:var(--surf); color:var(--text); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.perf-nav-btn:hover { background:var(--em-dim); border-color:var(--em); color:var(--em-lt); }
+.perf-nav-btn:disabled { opacity:.3; cursor:default; }
 </style>
 </head>
 <body>
@@ -816,6 +890,10 @@ button, input { font-family:inherit; }
 <symbol id="ico-scroll" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
   <path d="M12 5v14"/><polyline points="7 14 12 19 17 14"/><polyline points="7 9 12 14 17 9"/>
 </symbol>
+<symbol id="ico-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+</symbol>
 </defs>
 </svg>
 
@@ -886,6 +964,8 @@ button, input { font-family:inherit; }
       <div style="padding:0 16px 10px"><input class="sheet-text-input" id="sheetWriter" dir="rtl" placeholder="׳©׳ ׳”׳›׳•׳×׳‘ (׳׳•׳₪׳¦׳™׳•׳ ׳׳™)..."></div>
       <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">׳׳׳—׳™׳</span></div>
       <div style="padding:0 16px 12px"><input class="sheet-text-input" id="sheetComposer" dir="rtl" placeholder="׳©׳ ׳”׳׳׳—׳™׳ (׳׳•׳₪׳¦׳™׳•׳ ׳׳™)..."></div>
+      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">תגיות</span></div>
+      <div style="padding:0 16px 12px"><input class="sheet-text-input" id="sheetTags" dir="rtl" placeholder="רוק, פופ, חגיגי (מופרד בפסיקים)..."></div>
       <div class="sheet-action-row">
         <div class="sheet-btn sheet-btn-primary" onclick="APP.saveSongSheet()">׳©׳׳•׳¨</div>
         <div class="sheet-btn sheet-btn-danger" onclick="APP.confirmDeleteFromSheet()">׳׳—׳§ ׳©׳™׳¨</div>
@@ -933,6 +1013,10 @@ button, input { font-family:inherit; }
       </div>
       <div class="hdr-icon-btn" id="perfScrollBtn" onclick="APP.toggleAutoScroll()" title="גלילה אוטומטית"><svg width="15" height="15"><use href="#ico-scroll"/></svg></div>
       <div class="hdr-icon-btn" id="perfLyrBtn" onclick="APP.togglePerfLyrics()" title="תצוגת מילים"><svg width="15" height="15"><use href="#ico-eye"/></svg></div>
+      <div class="perf-setlist-nav">
+        <button class="perf-nav-btn" id="perfPrevBtn" onclick="APP.setlistPrev()" style="display:none" title="שיר קודם">&lsaquo;</button>
+        <button class="perf-nav-btn" id="perfNextBtn" onclick="APP.setlistNext()" style="display:none" title="שיר הבא">&rsaquo;</button>
+      </div>
     </div>
     <div class="perf-scroll" id="perfScroll"></div>
   </div>

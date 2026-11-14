@@ -5,13 +5,17 @@ var DB = (function () {
   function _open() {
     if (_db) return Promise.resolve(_db);
     return new Promise(function (res, rej) {
-      var req = indexedDB.open('OrenSongBook', 1);
+      var req = indexedDB.open('OrenSongBook', 2);
       req.onupgradeneeded = function (e) {
         var db = e.target.result;
         if (!db.objectStoreNames.contains('songs'))
           db.createObjectStore('songs', { keyPath: 'SongID' });
         if (!db.objectStoreNames.contains('queue'))
           db.createObjectStore('queue', { autoIncrement: true });
+        if (!db.objectStoreNames.contains('playlists'))
+          db.createObjectStore('playlists', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('memos'))
+          db.createObjectStore('memos', { keyPath: 'songId' });
       };
       req.onsuccess = function (e) { _db = e.target.result; res(_db); };
       req.onerror   = function (e) { rej(e); };
@@ -30,24 +34,22 @@ var DB = (function () {
     });
   }
 
-  function getAllSongs() {
+  function _getAll(store) {
     return _open().then(function (db) {
       return new Promise(function (res, rej) {
-        var req = db.transaction('songs', 'readonly').objectStore('songs').getAll();
+        var req = db.transaction(store, 'readonly').objectStore(store).getAll();
         req.onsuccess = function () { res(req.result || []); };
         req.onerror   = rej;
       });
     });
   }
 
-  function getSong(id) {
-    return _tx('songs', 'readonly', function (s) { return s.get(id); });
-  }
+  // ── Songs ──────────────────────────────────────────────────────────────
+  function getAllSongs()  { return _getAll('songs'); }
+  function getSong(id)   { return _tx('songs', 'readonly',  function (s) { return s.get(id); }); }
+  function saveSong(song){ return _tx('songs', 'readwrite', function (s) { return s.put(song); }); }
 
-  function saveSong(song) {
-    return _tx('songs', 'readwrite', function (s) { return s.put(song); });
-  }
-
+  // ── Sync queue ─────────────────────────────────────────────────────────
   function enqueue(op) {
     return _open().then(function (db) {
       return new Promise(function (res, rej) {
@@ -77,8 +79,22 @@ var DB = (function () {
     return _tx('queue', 'readwrite', function (s) { return s.delete(key); });
   }
 
+  // ── Playlists ──────────────────────────────────────────────────────────
+  function getAllPlaylists()      { return _getAll('playlists'); }
+  function getPlaylist(id)        { return _tx('playlists', 'readonly',  function (s) { return s.get(id); }); }
+  function savePlaylist(pl)       { return _tx('playlists', 'readwrite', function (s) { return s.put(pl); }); }
+  function deletePlaylist(id)     { return _tx('playlists', 'readwrite', function (s) { return s.delete(id); }); }
+
+  // ── Voice memos ────────────────────────────────────────────────────────
+  function getMemo(songId)        { return _tx('memos', 'readonly',  function (s) { return s.get(songId); }); }
+  function saveMemo(songId, data) { return _tx('memos', 'readwrite', function (s) { return s.put({ songId: songId, data: data, ts: Date.now() }); }); }
+  function deleteMemo(songId)     { return _tx('memos', 'readwrite', function (s) { return s.delete(songId); }); }
+
   return {
     getAllSongs: getAllSongs, getSong: getSong, saveSong: saveSong,
-    enqueue: enqueue, dequeueAll: dequeueAll, removeQueueItem: removeQueueItem
+    enqueue: enqueue, dequeueAll: dequeueAll, removeQueueItem: removeQueueItem,
+    getAllPlaylists: getAllPlaylists, getPlaylist: getPlaylist,
+    savePlaylist: savePlaylist, deletePlaylist: deletePlaylist,
+    getMemo: getMemo, saveMemo: saveMemo, deleteMemo: deleteMemo,
   };
 })();
