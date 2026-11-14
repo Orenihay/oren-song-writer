@@ -1,0 +1,11 @@
+{
+  "name": "oren-song-writer",
+  "version": "0.1.0",
+  "description": "Song writing app — Google Sheets + Apps Script",
+  "scripts": {
+    "build": "node build/build.js",
+    "test": "node test/test.js",
+    "release-check": "node build/build.js && node test/test.js"
+  },
+  "engines": { "node": ">=16" }
+}

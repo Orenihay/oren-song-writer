@@ -1,0 +1,964 @@
+﻿<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Oren Song Book</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300;0,400;0,500;0,600;0,700;1,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ג”€ג”€ Tokens ג”€ג”€ */
+:root {
+  --bg:       #07141f;
+  --bg-alt:   #060f18;
+  --surf:     #0d2032;
+  --card:     #132b40;
+  --card2:    #18344d;
+  --em:       #0d9488;
+  --em-lt:    #2dd4bf;
+  --em-glow:  rgba(45,212,191,.18);
+  --em-dim:   rgba(45,212,191,.08);
+  --chord:    #4ade80;
+  --chord-bg: rgba(74,222,128,.13);
+  --text:     #cce8e3;
+  --t2:       #6da8a0;
+  --t3:       #2d5550;
+  --bdr:      #183348;
+  --bdr2:     #0f2435;
+  --pin:      #f59e0b;
+  --violet:   #a78bfa;
+  --r:        10px;
+  --nav-h:    60px;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg:    #eef9f7; --bg-alt:#f5fffe; --surf:#ffffff; --card:#ffffff; --card2:#f0faf8;
+    --em:    #0d9488; --em-lt:#0a7a6a; --em-glow:rgba(13,148,136,.12); --em-dim:rgba(13,148,136,.06);
+    --chord: #047857; --chord-bg:rgba(4,120,87,.12);
+    --text:  #062018; --t2:#296b62; --t3:#9bcec5;
+    --bdr:   #b8d9d4; --bdr2:#d4ecea;
+  }
+}
+:root[data-theme="light"] {
+  --bg:    #eef9f7; --bg-alt:#f5fffe; --surf:#ffffff; --card:#ffffff; --card2:#f0faf8;
+  --em:    #0d9488; --em-lt:#0a7a6a; --em-glow:rgba(13,148,136,.12); --em-dim:rgba(13,148,136,.06);
+  --chord: #047857; --chord-bg:rgba(4,120,87,.12);
+  --text:  #062018; --t2:#296b62; --t3:#9bcec5;
+  --bdr:   #b8d9d4; --bdr2:#d4ecea;
+}
+/* ג”€ג”€ Reset ג”€ג”€ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { height:100%; font-size:16px; }
+@media (max-width:380px) { html { font-size:15px; } }
+body { height:100%; font-family:'Rubik','Segoe UI','Arial Hebrew',sans-serif; background:var(--bg); color:var(--text); overflow:hidden; }
+button, input { font-family:inherit; }
+
+/* ג”€ג”€ Layout ג”€ג”€ */
+#root {
+  position:fixed; top:0; left:0; right:0;
+  bottom:var(--nav-h);
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  background:var(--bg);
+}
+.bot-nav {
+  position:fixed; bottom:0; left:0; right:0; height:var(--nav-h);
+  background:var(--surf); border-top:1px solid var(--bdr);
+  display:flex; align-items:stretch; z-index:10;
+}
+.nav-btn {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; cursor:pointer; color:var(--t2); padding:4px 0;
+  transition:color .15s;
+}
+.nav-btn.on { color:var(--em-lt); }
+.nav-btn:active { opacity:.7; }
+.nav-ico { width:20px; height:20px; }
+.nav-lbl { font-size:.62rem; font-weight:500; }
+
+/* ג”€ג”€ Toast ג”€ג”€ */
+.toast {
+  position:fixed; bottom:calc(var(--nav-h) + 10px); left:50%;
+  transform:translateX(-50%) translateY(60px);
+  background:var(--card); color:var(--text); padding:9px 18px;
+  border-radius:999px; font-size:.85rem; white-space:nowrap;
+  transition:transform .22s ease,opacity .22s ease; opacity:0; z-index:100; pointer-events:none;
+  border:1px solid var(--bdr);
+}
+.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+.toast.ok   { background:rgba(74,222,128,.2); color:#4ade80; border-color:#4ade80; }
+.toast.err  { background:rgba(239,68,68,.18); color:#f87171; border-color:#f87171; }
+
+/* ג”€ג”€ Stale banner ג”€ג”€ */
+#stale-banner { display:none; background:var(--pin); color:#78350f; padding:10px 16px; font-size:.85rem; text-align:center; position:fixed; top:0; left:0; right:0; z-index:200; }
+#stale-banner.show { display:block; }
+
+/* ג”€ג”€ Spinner ג”€ג”€ */
+.spinner { width:32px; height:32px; border:3px solid var(--bdr); border-top-color:var(--em-lt); border-radius:50%; animation:spin .8s linear infinite; margin:12px auto; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* RTL lyrics input */
+.lyric-input { direction:rtl; text-align:right; }
+
+/* ג”€ג”€ Word-level chord editing ג”€ג”€ */
+.line-pair { background:var(--card); border-radius:7px; padding:2px 6px 6px; margin-bottom:12px; border:1px solid var(--bdr2); }
+.line-pair:focus-within { border-color:var(--em); }
+.word-chips-row { display:flex; flex-wrap:wrap; gap:0 1px; padding:4px 2px 0; min-height:26px; align-items:flex-end; cursor:default; direction:rtl; }
+.word-chip { display:inline-flex; flex-direction:column; align-items:center; cursor:pointer; border-radius:4px; padding:1px 3px; transition:background .1s; }
+.word-chip:hover { background:var(--em-dim); }
+.word-chip:active { background:var(--em-glow); }
+.word-chord-slot { min-height:20px; display:flex; align-items:flex-end; justify-content:center; padding-bottom:1px; }
+.word-lyr { font-size:.92rem; white-space:nowrap; line-height:1.4; color:var(--text); }
+.chord-add-hint { font-size:.6rem; color:var(--t3); opacity:0; transition:opacity .12s; }
+.word-chip:hover .chord-add-hint { opacity:1; }
+.word-chip .chord { font-size:.74rem; color:var(--chord); font-weight:700; font-family:'JetBrains Mono',monospace; white-space:nowrap; background:var(--chord-bg,rgba(74,222,128,.12)); padding:1px 5px; border-radius:4px; }
+.word-chip-ph { opacity:.45; }
+.word-chip.chord-dragging { opacity:.35; }
+.chord.chord-src-dragging { opacity:.2; transform:scale(.8); }
+.chord-drag-ghost { position:fixed;top:-100px;left:-100px;padding:3px 10px;border-radius:8px;background:var(--chord);color:var(--bg);font-weight:700;font-size:.82rem;font-family:'JetBrains Mono',monospace;pointer-events:none;z-index:9999;white-space:nowrap; }
+.word-chip.chord-drag-over .word-chord-slot { outline:2px solid var(--em); background:rgba(13,148,136,.2); border-radius:3px; }
+.line-input-wrap { display:flex; align-items:center; gap:4px; padding-top:1px; }
+/* Picker search + common section */
+.picker-search { width:calc(100% - 24px); margin:0 12px 6px; padding:9px 12px; border-radius:10px; border:1px solid var(--bdr); background:var(--surf); color:var(--text); font-size:.9rem; outline:none; }
+.picker-search:focus { border-color:var(--em-lt); }
+.picker-search::placeholder { color:var(--t3); }
+.picker-common { display:flex; flex-wrap:wrap; gap:5px; padding:0 12px 8px; }
+.picker-sect-lbl { width:100%; font-size:.62rem; font-weight:700; color:var(--t3); letter-spacing:.06em; text-transform:uppercase; padding:3px 0 2px; }
+/* Song settings text inputs */
+.sheet-text-input { width:100%; background:var(--surf); border:1px solid var(--bdr); border-radius:7px; padding:9px 12px; color:var(--text); font-family:inherit; font-size:.87rem; outline:none; transition:border-color .15s; caret-color:var(--em-lt); direction:rtl; }
+.sheet-text-input:focus { border-color:var(--em); }
+.sheet-text-input::placeholder { color:var(--t3); }
+
+
+/* ג”€ג”€ App header ג”€ג”€ */
+.app-hdr {
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background:var(--surf); border-bottom:1px solid var(--bdr); position:sticky; top:0; z-index:5;
+}
+.app-logo-inline { flex:1; display:flex; align-items:center; gap:7px; }
+.ali-oren { font-size:1rem; font-weight:700; font-style:italic; color:#1a6b35; letter-spacing:-.3px; }
+.ali-book { font-size:1rem; font-weight:600; color:var(--t2); }
+.hdr-icon-btn {
+  width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  border-radius:8px; color:var(--t2); cursor:pointer;
+  transition:background .12s, color .12s;
+}
+.hdr-icon-btn:hover, .hdr-icon-btn.active { background:var(--em-dim); color:var(--em-lt); }
+
+/* ג”€ג”€ Song nav bar (editor/structure) ג”€ג”€ */
+.song-nav-bar {
+  display:flex; align-items:center; gap:8px; padding:9px 12px;
+  background:var(--surf); border-bottom:1px solid var(--bdr); position:sticky; top:0; z-index:5;
+}
+.nav-back {
+  width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  border-radius:8px; color:var(--t2); cursor:pointer;
+}
+.nav-back:hover { background:var(--em-dim); color:var(--em-lt); }
+.top-action-grp { display:flex; gap:4px; }
+.top-act-btn {
+  width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+  border-radius:7px; background:var(--em-dim); color:var(--em-lt); cursor:pointer;
+  transition:background .12s;
+}
+.top-act-btn:hover { background:var(--em-glow); }
+.song-hdr-info { flex:1; padding:0 6px; min-width:0; }
+.song-hdr-name { font-size:.9rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.song-hdr-key  { font-size:.7rem; color:var(--t2); }
+
+/* ג”€ג”€ Sync row ג”€ג”€ */
+.sync-row {
+  display:flex; align-items:center; gap:5px; padding:4px 14px;
+  font-size:.72rem; color:var(--t3); background:var(--bg-alt);
+}
+.sync-dot { width:5px; height:5px; border-radius:50%; background:var(--t3); }
+#syncStatus[data-state="pending"] { color:var(--pin); }
+#syncStatus[data-state="ok"]      { color:var(--em-lt); }
+#syncStatus[data-state="error"],
+#syncStatus[data-state="conflict"]{ color:#f87171; }
+
+/* ג”€ג”€ Arrangement strip ג”€ג”€ */
+.arr-strip {
+  display:flex; align-items:center; gap:6px; padding:8px 14px;
+  overflow-x:auto; border-bottom:1px solid var(--bdr2);
+  scrollbar-width:none;
+}
+.arr-strip::-webkit-scrollbar { display:none; }
+.arr-chip {
+  flex-shrink:0; padding:4px 10px; border-radius:6px; border:1px solid;
+  font-size:.72rem; font-weight:600; font-family:'JetBrains Mono',monospace; white-space:nowrap;
+}
+
+/* ג”€ג”€ Editor scroll ג”€ג”€ */
+.editor-scroll { padding:14px 14px 100px; }
+
+/* ג”€ג”€ Block ג”€ג”€ */
+.block { margin-bottom:18px; border:1px solid var(--bdr); border-radius:var(--r); background:var(--card); overflow:hidden; transition:opacity .12s, transform .12s, border-top .08s; }
+.block.block-dragging { opacity:.3; transform:scale(.99); pointer-events:none; }
+.block.block-drag-over { border-top:3px solid var(--em); }
+.block-hdr { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--card2); border-bottom:1px solid var(--bdr2); }
+.block-drag-handle { cursor:grab; color:var(--t3); padding:2px 4px; border-radius:4px; font-size:1rem; line-height:1; user-select:none; transition:color .1s; }
+.block-drag-handle:hover { color:var(--em-lt); background:var(--em-dim); }
+.block-drag-handle:active { cursor:grabbing; }
+.block-pill { font-size:.72rem; font-weight:600; padding:3px 9px; border-radius:5px; }
+.dup-btn {
+  display:flex; align-items:center; gap:4px; font-size:.72rem; color:var(--em-lt);
+  cursor:pointer; padding:3px 8px; border-radius:5px;
+  transition:background .12s;
+}
+.dup-btn:hover { background:var(--em-dim); }
+.block-occ { margin-right:auto; font-size:.68rem; color:var(--t2); }
+.lines { padding:10px 12px 6px; }
+
+/* ג”€ג”€ Chord line (segment-based, flex RTL) ג”€ג”€ */
+.chord-line { display:flex; flex-wrap:wrap; align-items:flex-start; direction:rtl; min-height:40px; }
+.seg { display:inline-flex; flex-direction:column; align-items:flex-start; cursor:pointer; min-width:4px; }
+.seg:hover .lyr { background:var(--em-dim); border-radius:3px; }
+.chord {
+  font-family:'JetBrains Mono',monospace; font-size:.72rem; font-weight:600;
+  color:var(--chord); background:var(--chord-bg); padding:1px 5px; border-radius:4px;
+  margin-bottom:1px; direction:ltr; unicode-bidi:isolate; white-space:nowrap;
+  cursor:pointer; transition:background .1s, box-shadow .1s;
+}
+.chord:hover { background:rgba(74,222,128,.24); box-shadow:0 0 0 1px var(--chord); }
+.chord-ph { min-height:20px; display:block; }
+.lyr { font-size:.93rem; line-height:1.45; color:var(--text); }
+.add-line-row { padding:4px 0 2px; cursor:pointer; }
+.add-line-row:hover span { color:var(--em-lt); }
+
+/* Lyrics-only mode: hide chord rows */
+.lyrics-mode .chord,
+.lyrics-mode .chord-ph { display:none; }
+
+/* ג”€ג”€ Copy menu ג”€ג”€ */
+.copy-menu {
+  position:fixed; top:48px; left:12px; right:12px; z-index:20;
+  background:var(--card); border:1px solid var(--bdr); border-radius:var(--r);
+  box-shadow:0 8px 32px rgba(0,0,0,.35);
+  animation:fadeInDown .18s ease;
+}
+.copy-menu-title { font-size:.72rem; font-weight:600; color:var(--t2); padding:10px 14px 6px; }
+.copy-opt {
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  cursor:pointer; color:var(--text);
+  transition:background .12s;
+}
+.copy-opt:hover { background:var(--em-dim); }
+.copy-opt svg { color:var(--em-lt); flex-shrink:0; }
+.copy-opt-title { font-size:.85rem; font-weight:500; }
+.copy-opt-desc  { font-size:.73rem; color:var(--t2); }
+@keyframes fadeInDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+
+/* ג”€ג”€ Chord picker ג”€ג”€ */
+.chord-picker {
+  position:fixed; bottom:var(--nav-h); left:0; right:0; z-index:20;
+  background:var(--surf); border-top:1px solid var(--bdr); border-radius:14px 14px 0 0;
+  box-shadow:0 -8px 40px rgba(0,0,0,.4);
+  animation:slideUp .24s cubic-bezier(.32,1.1,.56,1);
+  max-height:55vh; display:flex; flex-direction:column;
+}
+.picker-drag-bar { width:36px; height:4px; background:var(--bdr); border-radius:2px; margin:10px auto 6px; }
+.picker-hdr { display:flex; align-items:center; justify-content:space-between; padding:0 16px 8px; }
+.picker-title { font-size:.85rem; font-weight:600; color:var(--text); }
+.picker-remove-btn { font-size:.8rem; color:#f87171; cursor:pointer; padding:4px 10px; border-radius:6px; background:rgba(239,68,68,.1); }
+.picker-sugg { display:flex; gap:6px; padding:4px 14px 10px; overflow-x:auto; scrollbar-width:none; flex-shrink:0; }
+.picker-sugg::-webkit-scrollbar { display:none; }
+.sugg-chip {
+  flex-shrink:0; padding:6px 12px; border-radius:7px;
+  background:var(--em-dim); color:var(--em-lt); font-weight:600; font-size:.8rem;
+  cursor:pointer; border:1px solid var(--em-glow);
+  transition:background .1s;
+}
+.sugg-chip:hover { background:var(--em-glow); }
+.picker-kbd {
+  display:flex; flex-wrap:wrap; gap:5px; padding:6px 14px 14px; overflow-y:auto;
+}
+.kbd-btn {
+  padding:5px 8px; border-radius:6px; font-size:.75rem; font-weight:500;
+  background:var(--card); color:var(--text); border:1px solid var(--bdr);
+  cursor:pointer; font-family:'JetBrains Mono',monospace;
+  transition:background .1s;
+}
+.kbd-btn:hover { background:var(--em-dim); border-color:var(--em-lt); color:var(--em-lt); }
+.kbd-btn.root { font-weight:700; color:var(--em-lt); }
+@keyframes slideUp { from { transform:translateY(100%); } to { transform:none; } }
+
+/* ג”€ג”€ Library ג”€ג”€ */
+.pinned-section { padding:10px 0 0; }
+.section-lbl { font-size:.72rem; font-weight:600; color:var(--t2); letter-spacing:.04em; text-transform:uppercase; }
+.pin-cards { display:flex; gap:10px; padding:8px 14px; overflow-x:auto; scrollbar-width:none; }
+.pin-cards::-webkit-scrollbar { display:none; }
+.pin-card {
+  flex-shrink:0; min-width:130px; background:var(--card); border:1px solid var(--bdr);
+  border-radius:var(--r); padding:12px; cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.pin-card:hover { border-color:var(--em-lt); background:var(--card2); }
+.pin-card-title { font-size:.88rem; font-weight:600; margin-bottom:4px; }
+.pin-card-key   { font-size:.72rem; color:var(--t2); margin-bottom:6px; }
+.song-list { padding:4px 0; }
+.song-item {
+  display:flex; align-items:center; gap:10px; padding:11px 14px;
+  border-bottom:1px solid var(--bdr2); cursor:pointer;
+  transition:background .12s;
+}
+.song-item:hover { background:var(--card); }
+.song-ico { flex-shrink:0; }
+.song-info { flex:1; min-width:0; }
+.song-title { font-size:.9rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.song-meta  { font-size:.73rem; color:var(--t2); margin-top:2px; }
+.song-key   { background:var(--em-dim); color:var(--em-lt); padding:1px 6px; border-radius:4px; font-size:.7rem; font-weight:600; }
+.fab {
+  position:fixed; bottom:calc(var(--nav-h) + 14px); left:16px;
+  background:var(--em); color:#fff; border-radius:50px; padding:11px 20px;
+  display:flex; align-items:center; gap:7px; font-size:.88rem; font-weight:600;
+  box-shadow:0 4px 20px rgba(13,148,136,.4); cursor:pointer;
+  transition:transform .15s, box-shadow .15s;
+}
+.fab:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(13,148,136,.5); }
+
+/* ג”€ג”€ Badges ג”€ג”€ */
+.badge    { display:inline-block; padding:2px 8px; border-radius:999px; font-size:.7rem; font-weight:600; }
+.b-draft  { background:rgba(148,163,184,.12); color:#94a3b8; }
+.b-wip    { background:rgba(251,191,36,.12);  color:#fbbf24; }
+.b-done   { background:rgba(74,222,128,.12);  color:#4ade80; }
+
+/* ג”€ג”€ Structure screen ג”€ג”€ */
+.arr-editor-wrap { padding:14px; }
+.arr-ed-label { font-size:.72rem; font-weight:600; color:var(--t2); margin-bottom:8px; }
+.arr-flow { display:flex; flex-wrap:wrap; gap:7px; }
+.arr-node {
+  padding:7px 12px; border-radius:8px; border:1px solid;
+  font-size:.8rem; font-weight:700; font-family:'JetBrains Mono',monospace;
+  display:flex; align-items:center; gap:5px; cursor:grab; user-select:none;
+  transition:opacity .15s;
+}
+.arr-node.dragging  { opacity:.4; }
+.arr-node.drag-over { box-shadow:0 0 0 2px var(--em-lt); }
+.an-drag { font-size:.8rem; opacity:.5; }
+.struct-summary {
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px;
+  background:var(--bdr); border-top:1px solid var(--bdr); border-bottom:1px solid var(--bdr);
+}
+.sum-row {
+  background:var(--card); padding:10px 14px;
+  display:flex; flex-direction:column; gap:3px;
+}
+.sum-row span:first-child { font-size:.7rem; color:var(--t2); }
+.sum-row span:last-child  { font-size:.95rem; font-weight:600; color:var(--em-lt); }
+.block-list { padding:10px 0 80px; }
+.bl-row {
+  display:flex; align-items:flex-start; gap:10px; padding:12px 14px;
+  border-bottom:1px solid var(--bdr2);
+}
+.bl-pill { flex-shrink:0; font-size:.68rem; font-weight:600; padding:4px 9px; border-radius:6px; }
+.bl-info { flex:1; min-width:0; }
+.bl-preview { font-size:.82rem; color:var(--t2); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-chords  { display:flex; flex-wrap:wrap; gap:4px; margin-top:5px; }
+.ch-tag { font-size:.7rem; font-family:'JetBrains Mono',monospace; padding:1px 5px; border-radius:4px; background:var(--chord-bg); color:var(--chord); }
+.bl-occ { font-size:.72rem; color:var(--t3); margin-top:4px; display:flex; align-items:center; gap:4px; }
+
+/* ג”€ג”€ Lyric text input ג”€ג”€ */
+.lyric-input {
+  width:100%; border:none; background:transparent; color:var(--text);
+  font-family:'Rubik','Segoe UI','Arial Hebrew',sans-serif; font-size:.93rem; line-height:1.45;
+  padding:2px 0; outline:none; caret-color:var(--em-lt);
+  border-bottom:1px solid transparent; transition:border-color .15s;
+}
+.lyric-input:focus { border-bottom-color:var(--em); }
+.lyric-input::placeholder { color:var(--t3); }
+.lyrics-mode .lyric-input { caret-color:var(--em-lt); }
+
+/* ג”€ג”€ Song title input ג”€ג”€ */
+.song-title-input {
+  flex:1; min-width:0; border:none; background:transparent; color:var(--text);
+  font-family:inherit; font-size:.9rem; font-weight:600; padding:0; outline:none;
+  caret-color:var(--em-lt); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.song-title-input::placeholder { color:var(--t3); }
+
+/* ג”€ג”€ New song modal ג”€ג”€ */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.72); z-index:50;
+  display:flex; align-items:center; justify-content:center;
+}
+.modal-box {
+  background:var(--card); border:1px solid var(--bdr); border-radius:var(--r);
+  padding:22px 20px; width:84%; max-width:320px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+}
+.modal-title { font-size:.95rem; font-weight:600; margin-bottom:14px; color:var(--text); }
+.modal-input {
+  width:100%; background:var(--surf); border:1px solid var(--bdr); border-radius:7px;
+  padding:10px 12px; color:var(--text); font-family:inherit; font-size:.9rem; outline:none;
+  transition:border-color .15s; caret-color:var(--em-lt);
+}
+.modal-input:focus { border-color:var(--em); }
+.modal-actions { display:flex; gap:8px; margin-top:16px; justify-content:flex-start; }
+.modal-cancel { padding:8px 14px; border-radius:7px; cursor:pointer; color:var(--t2); font-size:.85rem; }
+.modal-cancel:hover { background:var(--em-dim); }
+.modal-confirm { padding:8px 18px; border-radius:7px; background:var(--em); color:#fff; font-size:.85rem; font-weight:600; cursor:pointer; }
+.modal-confirm:hover { background:var(--em-lt); }
+
+/* ג”€ג”€ Screen + list animations ג”€ג”€ */
+.screen-anim { animation:screenIn .2s ease both; }
+@keyframes screenIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+.list-anim { animation:listIn .22s ease both; animation-delay:calc(var(--i,0)*35ms); }
+@keyframes listIn { from{opacity:0;transform:translateX(6px)} to{opacity:1;transform:none} }
+@keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+@keyframes slideUp   { from{transform:translateY(100%)} to{transform:none} }
+@keyframes chordPop  { from{transform:scale(.3);opacity:0} 70%{transform:scale(1.12)} to{transform:scale(1);opacity:1} }
+@keyframes perfSlide { from{transform:translateY(80px);opacity:0} to{transform:translateY(0);opacity:1} }
+@keyframes cdFade    { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+
+.word-chip .chord { animation:chordPop .2s cubic-bezier(.34,1.56,.64,1) both; }
+.perf-screen { animation:perfSlide .28s cubic-bezier(.25,.46,.45,.94) both; }
+.cd-wrap { animation:cdFade .2s ease both; }
+.cd-wrap:nth-child(1){animation-delay:0ms}.cd-wrap:nth-child(2){animation-delay:40ms}
+.cd-wrap:nth-child(3){animation-delay:80ms}.cd-wrap:nth-child(4){animation-delay:120ms}
+.cd-wrap:nth-child(5){animation-delay:160ms}.cd-wrap:nth-child(6){animation-delay:200ms}
+.cd-wrap:nth-child(7){animation-delay:240ms}.cd-wrap:nth-child(8){animation-delay:280ms}
+/* button press feedback */
+.hdr-icon-btn { transition:transform .1s, color .15s; }
+.hdr-icon-btn:active { transform:scale(.82); }
+.perf-tp-btn { transition:transform .1s, background .1s; }
+.perf-tp-btn:active { transform:scale(.88) !important; }
+.sugg-chip { transition:transform .08s, background .12s, box-shadow .12s; }
+.sugg-chip:active { transform:scale(.9); }
+.fab { transition:transform .12s, box-shadow .15s; }
+.fab:active { transform:scale(.94); box-shadow:0 2px 10px rgba(0,0,0,.3); }
+.nav-btn { transition:color .15s, transform .1s; }
+.nav-btn:active { transform:scale(.9); }
+
+/* ג”€ג”€ Library filter tabs ג”€ג”€ */
+.lib-tabs {
+  display:flex; gap:0; padding:0 14px; border-bottom:1px solid var(--bdr2);
+  background:var(--surf); overflow-x:auto; scrollbar-width:none;
+}
+.lib-tabs::-webkit-scrollbar { display:none; }
+.lib-tab {
+  padding:9px 12px; font-size:.78rem; font-weight:500; color:var(--t2);
+  cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent;
+  transition:color .15s, border-color .15s;
+}
+.lib-tab.on { color:var(--em-lt); border-bottom-color:var(--em-lt); }
+
+/* ג”€ג”€ Song context menu button ג”€ג”€ */
+.song-menu-btn {
+  width:30px; height:30px; display:flex; align-items:center; justify-content:center;
+  border-radius:6px; color:var(--t2); flex-shrink:0; cursor:pointer;
+  transition:background .12s;
+}
+.song-menu-btn:hover { background:var(--em-dim); color:var(--em-lt); }
+
+/* ג”€ג”€ Context popup ג”€ג”€ */
+.ctx-popup {
+  position:fixed; background:var(--card); border:1px solid var(--bdr);
+  border-radius:var(--r); box-shadow:0 8px 32px rgba(0,0,0,.45); z-index:38;
+  overflow:hidden; min-width:160px; animation:fadeIn .14s ease;
+}
+.ctx-item {
+  display:flex; align-items:center; gap:10px; padding:11px 14px;
+  cursor:pointer; color:var(--text); font-size:.85rem;
+  transition:background .12s;
+}
+.ctx-item:hover { background:var(--em-dim); }
+.ctx-item.danger { color:#f87171; }
+.ctx-item.danger:hover { background:rgba(239,68,68,.1); }
+
+/* ג”€ג”€ Bottom sheet ג”€ג”€ */
+.sheet-ov {
+  position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:45;
+  display:flex; align-items:flex-end; animation:fadeIn .18s ease;
+}
+.sheet-pn {
+  width:100%; background:var(--surf); border-radius:16px 16px 0 0;
+  padding-bottom:env(safe-area-inset-bottom, 12px);
+  animation:slideUp .26s cubic-bezier(.32,1.1,.56,1);
+  max-height:82vh; overflow-y:auto;
+}
+.sheet-drag { width:36px; height:4px; background:var(--bdr); border-radius:2px; margin:10px auto 6px; }
+.sheet-title { font-size:.9rem; font-weight:600; padding:4px 16px 12px; color:var(--text); border-bottom:1px solid var(--bdr2); }
+.sheet-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 16px; border-bottom:1px solid var(--bdr2);
+  font-size:.85rem; color:var(--text); cursor:default;
+}
+.sheet-lbl { font-size:.78rem; color:var(--t2); }
+
+/* ג”€ג”€ Key selector grid ג”€ג”€ */
+.key-grid { display:flex; flex-wrap:wrap; gap:5px; padding:12px 16px 10px; }
+.key-btn {
+  padding:5px 8px; border-radius:6px; font-size:.78rem; font-weight:600;
+  background:var(--card); color:var(--text); border:1px solid var(--bdr);
+  cursor:pointer; font-family:'JetBrains Mono',monospace; min-width:38px; text-align:center;
+  transition:background .1s, border-color .1s;
+}
+.key-btn:hover { background:var(--em-dim); border-color:var(--em-lt); }
+.key-btn.on { background:var(--em); color:#fff; border-color:var(--em); }
+
+/* ג”€ג”€ Status row ג”€ג”€ */
+.status-row { display:flex; gap:6px; padding:10px 16px; }
+.status-btn {
+  flex:1; padding:7px 4px; border-radius:7px; text-align:center;
+  font-size:.8rem; font-weight:600; cursor:pointer; border:1px solid var(--bdr);
+  background:var(--card); color:var(--t2); transition:all .12s;
+}
+.status-btn.on { border-color:var(--em); background:var(--em-dim); color:var(--em-lt); }
+
+/* ג”€ג”€ Sheet action buttons ג”€ג”€ */
+.sheet-action-row { padding:12px 16px; display:flex; gap:8px; }
+.sheet-btn {
+  flex:1; padding:11px; border-radius:8px; text-align:center;
+  font-size:.88rem; font-weight:600; cursor:pointer; border:none;
+  transition:background .12s;
+}
+.sheet-btn-primary { background:var(--em); color:#fff; }
+.sheet-btn-primary:hover { background:var(--em-lt); }
+.sheet-btn-ghost { background:var(--em-dim); color:var(--em-lt); }
+.sheet-btn-ghost:hover { background:var(--em-glow); }
+.sheet-btn-danger { background:rgba(239,68,68,.12); color:#f87171; }
+.sheet-btn-danger:hover { background:rgba(239,68,68,.22); }
+
+/* ג”€ג”€ Num control (BPM/Capo) ג”€ג”€ */
+.num-ctrl { display:flex; align-items:center; gap:10px; }
+.num-btn {
+  width:28px; height:28px; display:flex; align-items:center; justify-content:center;
+  border-radius:6px; background:var(--em-dim); color:var(--em-lt);
+  cursor:pointer; font-size:1rem; font-weight:700;
+}
+.num-val { min-width:32px; text-align:center; font-weight:600; font-family:'JetBrains Mono',monospace; }
+
+/* ג”€ג”€ Block type picker ג”€ג”€ */
+.type-grid { display:flex; flex-wrap:wrap; gap:6px; padding:14px 16px; }
+.type-btn {
+  padding:6px 12px; border-radius:7px; font-size:.78rem; font-weight:600;
+  cursor:pointer; border:1px solid; transition:opacity .12s, box-shadow .12s;
+}
+.type-btn:hover { opacity:.8; }
+.type-btn.on { box-shadow:0 0 0 2px var(--em-lt); }
+
+/* ג”€ג”€ Line delete ג”€ג”€ */
+.line-del-btn {
+  width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+  border-radius:4px; color:var(--t3); flex-shrink:0; cursor:pointer;
+  opacity:0; transition:opacity .15s, color .15s;
+}
+.line-pair:hover .line-del-btn,
+.line-pair:focus-within .line-del-btn { opacity:1; }
+.line-del-btn:hover { color:#f87171; }
+
+/* ג”€ג”€ Performance mode ג”€ג”€ */
+.perf-screen {
+  position:fixed; inset:0; background:var(--bg); z-index:60;
+  display:flex; flex-direction:column; animation:fadeIn .2s ease;
+}
+.perf-hdr {
+  display:flex; align-items:center; gap:10px; padding:10px 14px;
+  background:var(--surf); border-bottom:1px solid var(--bdr); flex-shrink:0;
+}
+.perf-title { flex:1; font-size:.9rem; font-weight:600; color:var(--text); }
+.perf-scroll { flex:1; overflow-y:auto; padding:16px 14px 80px; }
+.perf-block { margin-bottom:28px; }
+.perf-block-lbl { font-size:.7rem; font-weight:600; color:var(--t2); margin-bottom:8px; text-transform:uppercase; letter-spacing:.06em; }
+.perf-line { margin-bottom:12px; }
+.perf-chord-row { display:flex; flex-wrap:wrap; direction:rtl; }
+.perf-seg { display:inline-flex; flex-direction:column; align-items:flex-start; }
+.perf-chord { font-family:'JetBrains Mono',monospace; font-size:.88rem; font-weight:700;
+  color:var(--chord); padding:1px 5px; border-radius:4px; background:var(--chord-bg);
+  margin-bottom:3px; direction:ltr; unicode-bidi:isolate; white-space:nowrap; }
+.perf-chord-ph { min-height:22px; display:block; }
+.perf-lyr { font-size:1.35rem; line-height:1.55; color:var(--text); }
+.perf-lyrics-only .perf-chord,
+.perf-lyrics-only .perf-chord-ph { display:none; }
+.perf-lyrics-only .perf-lyr { font-size:1.55rem; }
+.perf-lyrbtn-on { color:var(--em-lt) !important; }
+/* transpose controls */
+.perf-transpose { display:flex; align-items:center; gap:3px; }
+.perf-tp-btn { width:26px; height:26px; border-radius:7px; border:1px solid var(--bdr);
+  background:var(--surf); color:var(--text); font-size:1.1rem; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; padding:0; }
+.perf-tp-btn:active { background:var(--bdr2); }
+.perf-tp-val { font-size:.78rem; font-weight:700; color:var(--chord); min-width:22px; text-align:center; font-family:'JetBrains Mono',monospace; }
+/* chord diagram strip */
+.perf-chord-diagrams { display:flex; gap:10px; overflow-x:auto; padding:10px 14px 12px;
+  margin-bottom:14px; border-bottom:1px solid var(--bdr); flex-shrink:0;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.perf-chord-diagrams::-webkit-scrollbar { display:none; }
+.cd-wrap { display:flex; flex-direction:column; align-items:center; gap:2px; flex-shrink:0; cursor:default; }
+.cd-name { font-size:.62rem; font-weight:700; color:var(--chord); letter-spacing:.02em; font-family:'JetBrains Mono',monospace; }
+.cd-svg  { display:block; overflow:visible; }
+/* auto-scroll active */
+.perf-scroll-on { color:var(--em-lt) !important; }
+
+/* ג”€ג”€ Search overlay ג”€ג”€ */
+.search-overlay {
+  position:fixed; inset:0; background:var(--bg); z-index:30;
+  animation:fadeIn .15s ease; display:flex; flex-direction:column;
+}
+.search-hdr { display:flex; align-items:center; gap:8px; padding:10px 14px;
+  background:var(--surf); border-bottom:1px solid var(--bdr); }
+.search-input {
+  flex:1; border:1px solid var(--bdr); background:var(--bg-alt); border-radius:8px;
+  padding:8px 12px; color:var(--text); font-family:inherit; font-size:.9rem;
+  outline:none; caret-color:var(--em-lt);
+}
+.search-input:focus { border-color:var(--em); }
+.search-cancel { color:var(--em-lt); font-size:.85rem; cursor:pointer; padding:4px 8px; white-space:nowrap; }
+
+/* ג”€ג”€ Empty state ג”€ג”€ */
+.empty-state { padding:60px 20px 40px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:14px; }
+.empty-emblem { animation:emGlow 2.6s ease-in-out infinite; }
+@keyframes emGlow { 0%,100%{opacity:.6;transform:scale(1)} 50%{opacity:1;transform:scale(1.07)} }
+.empty-title { font-size:1rem; font-weight:600; color:var(--text); }
+.empty-sub { font-size:.85rem; color:var(--t2); max-width:220px; }
+.empty-create-btn { padding:10px 24px; background:var(--em); color:#fff; border-radius:8px; font-size:.88rem; font-weight:600; cursor:pointer; }
+
+/* ג”€ג”€ Sync dot pulse ג”€ג”€ */
+.sync-dot-pulse { animation:dotPulse 1.2s ease-in-out infinite; }
+@keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ── Safe-area insets (global — zero on non-notch devices) ── */
+.bot-nav {
+  height:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+}
+#root { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); }
+.chord-picker { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); }
+.fab { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 14px); }
+.toast { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 10px); }
+
+/* ── Touch: chord-add-hint always slightly visible (no hover on mobile) ── */
+@media (hover:none) {
+  .chord-add-hint { opacity:.45; }
+  .word-chip:active .chord-add-hint { opacity:.9; }
+  .line-del-btn { opacity:.7; }
+}
+
+/* ── Mobile full adaptation (<=640px) ── */
+@media (max-width:640px) {
+  html { font-size:16px; }
+
+  /* Inputs at 16px min — prevents iOS auto-zoom on focus */
+  .lyric-input     { font-size:1rem; line-height:1.65; padding:3px 0; }
+  .word-lyr        { font-size:1rem; }
+  .song-title-input{ font-size:1rem; }
+  .search-input    { font-size:1rem; }
+  .modal-input     { font-size:1rem; padding:12px; }
+  .sheet-text-input{ font-size:1rem; padding:11px 12px; }
+  .picker-search   { font-size:1rem; }
+
+  /* Bottom nav labels */
+  .nav-lbl { font-size:.68rem; }
+  .nav-ico  { width:22px; height:22px; }
+
+  /* Header tap targets 40px+ */
+  .hdr-icon-btn { width:40px; height:40px; border-radius:10px; }
+  .top-act-btn  { width:38px; height:38px; }
+  .nav-back     { width:38px; height:38px; }
+
+  /* Song list */
+  .song-item  { padding:13px 14px; }
+  .song-title { font-size:.95rem; }
+  .song-meta  { font-size:.78rem; }
+
+  /* Word chips — bigger tap targets */
+  .word-chip       { padding:3px 6px; min-height:40px; justify-content:flex-end; }
+  .word-chord-slot { min-height:22px; }
+
+  /* Chord keyboard — 44px min touch target */
+  .kbd-btn {
+    padding:11px 10px; font-size:.82rem; min-width:40px; min-height:44px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .picker-kbd { gap:6px; padding:8px 14px 16px; }
+  .sugg-chip  {
+    padding:9px 15px; font-size:.87rem; min-height:40px;
+    display:flex; align-items:center;
+  }
+  .picker-drag-bar { margin:12px auto 8px; }
+
+  /* Blocks */
+  .block-hdr  { padding:9px 12px; }
+  .block-pill { font-size:.75rem; padding:4px 10px; }
+  .lines      { padding:10px 10px 8px; }
+  .line-pair  { padding:3px 8px 8px; margin-bottom:14px; }
+  .line-del-btn { opacity:.5; width:28px; height:28px; }
+
+  /* Arrangement nodes */
+  .arr-node { padding:9px 14px; font-size:.85rem; }
+
+  /* Performance screen — large readable text */
+  .perf-lyr          { font-size:1.6rem; line-height:1.65; }
+  .perf-chord        { font-size:1rem; font-weight:700; }
+  .perf-chord-ph     { min-height:26px; }
+  .perf-lyrics-only .perf-lyr { font-size:1.75rem; }
+  .perf-scroll       { padding:16px 14px 100px; }
+
+  /* Context menu */
+  .ctx-item { padding:13px 16px; font-size:.9rem; }
+
+  /* Song settings sheet */
+  .sheet-row   { padding:14px 16px; font-size:.9rem; }
+  .sheet-btn   { padding:13px; font-size:.92rem; min-height:46px; }
+  .key-btn     { min-width:42px; min-height:40px; font-size:.82rem; }
+  .status-btn  { padding:9px 4px; font-size:.82rem; min-height:40px; }
+  .num-btn     { width:36px; height:36px; font-size:1.1rem; }
+  .type-btn    { padding:8px 14px; font-size:.82rem; min-height:40px; }
+
+  /* Modal */
+  .modal-box     { width:92%; padding:22px 18px; }
+  .modal-confirm { padding:11px 18px; font-size:.9rem; min-height:44px; }
+  .modal-cancel  { padding:11px 14px; font-size:.9rem; min-height:44px; }
+
+  /* Library tabs */
+  .lib-tab { padding:11px 14px; font-size:.82rem; }
+
+  /* Song nav bar */
+  .song-nav-bar  { padding:10px 12px; gap:8px; }
+  .song-hdr-name { font-size:.95rem; }
+  .app-hdr       { padding:10px 12px; }
+  .ali-oren      { font-size:1.05rem; }
+  .ali-book      { font-size:1.05rem; }
+
+  /* FAB */
+  .fab { padding:13px 22px; font-size:.92rem; left:14px; }
+
+  /* Copy menu */
+  .copy-menu { top:54px; }
+  .copy-opt  { padding:12px 14px; }
+  .copy-opt-title { font-size:.9rem; }
+}
+</style>
+</head>
+<body>
+<!-- SVG icon defs (hidden) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+<defs>
+<symbol id="ico-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+</symbol>
+<symbol id="ico-music" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+</symbol>
+<symbol id="ico-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+  <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+</symbol>
+<symbol id="ico-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+</symbol>
+<symbol id="ico-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+</symbol>
+<symbol id="ico-redo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>
+</symbol>
+<symbol id="ico-chord" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+  <line x1="9" y1="9" x2="21" y2="7"/>
+</symbol>
+<symbol id="ico-struct" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+  <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+</symbol>
+<symbol id="ico-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>
+</symbol>
+<symbol id="ico-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+</symbol>
+<symbol id="ico-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="3"/>
+  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+</symbol>
+<symbol id="ico-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="15 18 9 12 15 6"/>
+</symbol>
+<symbol id="ico-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+</symbol>
+<symbol id="ico-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+</symbol>
+<symbol id="ico-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+</symbol>
+<symbol id="ico-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+  <line x1="1" y1="1" x2="23" y2="23"/>
+</symbol>
+<symbol id="ico-dup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16H3a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v1"/>
+</symbol>
+<symbol id="ico-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+</symbol>
+<symbol id="ico-dots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+</symbol>
+<symbol id="ico-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+</symbol>
+<symbol id="ico-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+</symbol>
+<symbol id="ico-scroll" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 5v14"/><polyline points="7 14 12 19 17 14"/><polyline points="7 9 12 14 17 9"/>
+</symbol>
+</defs>
+</svg>
+
+<div id="stale-banner">ג  ׳’׳¨׳¡׳” ׳™׳©׳ ׳” ג€” ׳™׳© ׳׳¨׳¢׳ ׳ (F5)</div>
+
+<!-- New song modal -->
+<div id="newSongModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">׳©׳™׳¨ ׳—׳“׳©</div>
+    <input id="newSongInput" class="modal-input" type="text" dir="auto" autocomplete="off"
+      placeholder="׳©׳ ׳”׳©׳™׳¨"
+      onkeydown="if(event.key==='Enter')APP.confirmNewSong()">
+    <div class="modal-actions">
+      <div class="modal-cancel" onclick="APP.cancelNewSong()">׳‘׳™׳˜׳•׳</div>
+      <div class="modal-confirm" onclick="APP.confirmNewSong()">׳¦׳•׳¨ ׳©׳™׳¨</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Search overlay -->
+<div id="searchOverlay" style="display:none">
+  <div class="search-overlay">
+    <div class="search-hdr">
+      <input id="searchInput" class="search-input" type="search" dir="rtl" autocomplete="off"
+        placeholder="׳—׳™׳₪׳•׳© ׳©׳™׳¨׳™׳..." oninput="APP.filterSongs(this.value)">
+      <span class="search-cancel" onclick="APP.closeSearch()">׳‘׳™׳˜׳•׳</span>
+    </div>
+    <div id="searchResults" style="overflow-y:auto;flex:1;padding:4px 0"></div>
+  </div>
+</div>
+
+<!-- Song settings sheet -->
+<div id="songSheet" style="display:none">
+  <div class="sheet-ov" onclick="APP.closeSongSheet()">
+    <div class="sheet-pn" onclick="event.stopPropagation()">
+      <div class="sheet-drag"></div>
+      <div class="sheet-title" id="sheetSongTitle">׳”׳’׳“׳¨׳•׳× ׳©׳™׳¨</div>
+      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">׳¡׳•׳׳</span></div>
+      <div class="key-grid" id="keyGrid"></div>
+      <div class="sheet-row" style="border-bottom:none;padding-bottom:0"><span class="sheet-lbl">׳¡׳˜׳˜׳•׳¡</span></div>
+      <div class="status-row">
+        <div class="status-btn" id="st-draft" onclick="APP.setSheetStatus('draft')">׳˜׳™׳•׳˜׳”</div>
+        <div class="status-btn" id="st-wip" onclick="APP.setSheetStatus('wip')">׳‘׳›׳×׳™׳‘׳”</div>
+        <div class="status-btn" id="st-done" onclick="APP.setSheetStatus('done')">׳’׳׳•׳¨</div>
+      </div>
+      <div class="sheet-row">
+        <span>BPM</span>
+        <div class="num-ctrl">
+          <div class="num-btn" onclick="APP.adjustBpm(-5)">גˆ’</div>
+          <span class="num-val" id="bpmVal">ג€”</span>
+          <div class="num-btn" onclick="APP.adjustBpm(5)">+</div>
+        </div>
+      </div>
+      <div class="sheet-row">
+        <span>׳§׳₪׳•</span>
+        <div class="num-ctrl">
+          <div class="num-btn" onclick="APP.adjustCapo(-1)">גˆ’</div>
+          <span class="num-val" id="capoVal">0</span>
+          <div class="num-btn" onclick="APP.adjustCapo(1)">+</div>
+        </div>
+      </div>
+      <div class="sheet-row" onclick="APP.togglePinInSheet()" style="cursor:pointer">
+        <span>׳ ׳¢׳™׳¦׳”</span>
+        <span id="pinToggleIco" style="font-size:.85rem;color:var(--t2)">ג–¡</span>
+      </div>
+      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">׳›׳•׳×׳‘ ׳׳™׳׳™׳</span></div>
+      <div style="padding:0 16px 10px"><input class="sheet-text-input" id="sheetWriter" dir="rtl" placeholder="׳©׳ ׳”׳›׳•׳×׳‘ (׳׳•׳₪׳¦׳™׳•׳ ׳׳™)..."></div>
+      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">׳׳׳—׳™׳</span></div>
+      <div style="padding:0 16px 12px"><input class="sheet-text-input" id="sheetComposer" dir="rtl" placeholder="׳©׳ ׳”׳׳׳—׳™׳ (׳׳•׳₪׳¦׳™׳•׳ ׳׳™)..."></div>
+      <div class="sheet-action-row">
+        <div class="sheet-btn sheet-btn-primary" onclick="APP.saveSongSheet()">׳©׳׳•׳¨</div>
+        <div class="sheet-btn sheet-btn-danger" onclick="APP.confirmDeleteFromSheet()">׳׳—׳§ ׳©׳™׳¨</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Block type picker sheet -->
+<div id="blockTypeSheet" style="display:none">
+  <div class="sheet-ov" onclick="APP.closeBlockTypeSheet()">
+    <div class="sheet-pn" onclick="event.stopPropagation()">
+      <div class="sheet-drag"></div>
+      <div class="sheet-title">׳¡׳•׳’ ׳§׳˜׳¢</div>
+      <div class="type-grid" id="typeGrid"></div>
+      <div style="height:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm sheet -->
+<div id="confirmSheet" style="display:none">
+  <div class="sheet-ov" onclick="APP.closeConfirm()">
+    <div class="sheet-pn" onclick="event.stopPropagation()" style="padding:20px 16px 16px">
+      <div class="sheet-drag"></div>
+      <div id="confirmMsg" style="font-size:.9rem;text-align:center;padding:10px 0 14px;color:var(--text)"></div>
+      <div class="sheet-action-row" style="padding:0">
+        <div class="sheet-btn sheet-btn-ghost" onclick="APP.closeConfirm()">׳‘׳™׳˜׳•׳</div>
+        <div class="sheet-btn sheet-btn-danger" id="confirmYesBtn">׳׳™׳©׳•׳¨</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Performance screen -->
+<div id="perfScreen" style="display:none">
+  <div class="perf-screen">
+    <div class="perf-hdr">
+      <div class="nav-back" onclick="APP.closePerformance()"><svg width="18" height="18"><use href="#ico-back"/></svg></div>
+      <div class="perf-title" id="perfTitle"></div>
+      <div class="perf-transpose">
+        <button class="perf-tp-btn" onclick="APP.perfTransposeDown()">&#8722;</button>
+        <span class="perf-tp-val" id="perfTransposeVal">0</span>
+        <button class="perf-tp-btn" onclick="APP.perfTransposeUp()">+</button>
+      </div>
+      <div class="hdr-icon-btn" id="perfScrollBtn" onclick="APP.toggleAutoScroll()" title="גלילה אוטומטית"><svg width="15" height="15"><use href="#ico-scroll"/></svg></div>
+      <div class="hdr-icon-btn" id="perfLyrBtn" onclick="APP.togglePerfLyrics()" title="תצוגת מילים"><svg width="15" height="15"><use href="#ico-eye"/></svg></div>
+    </div>
+    <div class="perf-scroll" id="perfScroll"></div>
+  </div>
+</div>
+
+<div id="root">
+  <div style="display:flex;align-items:center;justify-content:center;height:200px">
+    <div class="spinner"></div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<nav id="bottomNav" class="bot-nav"></nav>
+
+<script>
+// @include app.js
+</script>
+<script>
+// Fingerprint check
+(function () {
+  var check = function () {
+    if (typeof BUILD_FP === 'undefined' || typeof google === 'undefined' || !google.script) return;
+    google.script.run
+      .withSuccessHandler(function (r) {
+        if (!r.match) {
+          var b = document.getElementById('stale-banner');
+          if (b) b.classList.add('show');
+        }
+      })
+      .apiCheckFingerprint(BUILD_FP);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', check);
+  else check();
+})();
+</script>
+
+</body>
+</html>
