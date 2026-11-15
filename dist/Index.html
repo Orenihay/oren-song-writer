@@ -637,6 +637,16 @@ button, input { font-family:inherit; }
 .fab { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 14px); }
 .toast { bottom:calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 10px); }
 
+/* ── Global touch UX fixes ── */
+* { -webkit-tap-highlight-color: transparent; }
+button, .nav-btn, .hdr-icon-btn, .top-act-btn, .fab, .lib-tab,
+.song-item, .pl-item, .word-chip, .kbd-btn, .sugg-chip,
+.block-drag-handle, .nav-back, .song-menu-btn, .ctx-item,
+.sheet-btn, .key-btn, .status-btn, .type-btn, .modal-cancel,
+.modal-confirm, .empty-create-btn, .collapse-all-btn {
+  touch-action: manipulation;
+}
+
 /* ── Touch: chord-add-hint always slightly visible (no hover on mobile) ── */
 @media (hover:none) {
   .chord-add-hint { opacity:.45; }
@@ -2701,7 +2711,7 @@ var EDITOR = (function () {
 'use strict';
 
 // Build-time values replaced by build.js
-var BUILD_FP    = 'v0.1.0-20261115T1915';
+var BUILD_FP    = 'v0.1.0-20261115T1931';
 var APP_VERSION = '0.1.0';
 
 // ── GAS bridge ────────────────────────────────────────────────────────────────
@@ -3786,6 +3796,32 @@ if (document.readyState === 'loading') {
 } else {
   APP.boot();
 }
+
+// ── iOS keyboard: lift #root above keyboard when it appears ──────────────────
+(function () {
+  if (!window.visualViewport) return;
+  var _raf = 0;
+  function _adjust() {
+    var root = document.getElementById('root');
+    if (!root) return;
+    var kbH = window.innerHeight - window.visualViewport.height;
+    root.style.bottom = kbH > 60 ? kbH + 'px' : '';
+  }
+  window.visualViewport.addEventListener('resize', function () {
+    cancelAnimationFrame(_raf);
+    _raf = requestAnimationFrame(_adjust);
+  });
+})();
+
+// ── Scroll focused lyric inputs into view after keyboard opens ───────────────
+document.addEventListener('focusin', function (e) {
+  if (!e.target) return;
+  var cls = e.target.className || '';
+  if (cls.indexOf('lyric-input') < 0 && cls.indexOf('sheet-text-input') < 0) return;
+  setTimeout(function () {
+    e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, 320);
+}, true);
 
 </script>
 <script>

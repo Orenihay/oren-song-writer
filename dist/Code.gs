@@ -228,7 +228,7 @@ function getSetupStatus() {
 
 
 // === Health.gs ===
-var BUILD_FP = 'v0.1.0-20261115T1915';
+var BUILD_FP = 'v0.1.0-20261115T1931';
 
 function healthLogError(context, err, data) {
   try {

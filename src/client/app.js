@@ -1086,3 +1086,29 @@ if (document.readyState === 'loading') {
 } else {
   APP.boot();
 }
+
+// ── iOS keyboard: lift #root above keyboard when it appears ──────────────────
+(function () {
+  if (!window.visualViewport) return;
+  var _raf = 0;
+  function _adjust() {
+    var root = document.getElementById('root');
+    if (!root) return;
+    var kbH = window.innerHeight - window.visualViewport.height;
+    root.style.bottom = kbH > 60 ? kbH + 'px' : '';
+  }
+  window.visualViewport.addEventListener('resize', function () {
+    cancelAnimationFrame(_raf);
+    _raf = requestAnimationFrame(_adjust);
+  });
+})();
+
+// ── Scroll focused lyric inputs into view after keyboard opens ───────────────
+document.addEventListener('focusin', function (e) {
+  if (!e.target) return;
+  var cls = e.target.className || '';
+  if (cls.indexOf('lyric-input') < 0 && cls.indexOf('sheet-text-input') < 0) return;
+  setTimeout(function () {
+    e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, 320);
+}, true);
