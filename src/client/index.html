@@ -897,18 +897,18 @@ button, input { font-family:inherit; }
 </defs>
 </svg>
 
-<div id="stale-banner">ג  ׳’׳¨׳¡׳” ׳™׳©׳ ׳” ג€” ׳™׳© ׳׳¨׳¢׳ ׳ (F5)</div>
+<div id="stale-banner">גרסה ישנה – יש מנהל (F5)</div>
 
 <!-- New song modal -->
 <div id="newSongModal" class="modal-overlay" style="display:none">
   <div class="modal-box">
-    <div class="modal-title">׳©׳™׳¨ ׳—׳“׳©</div>
+    <div class="modal-title">שיר חדש</div>
     <input id="newSongInput" class="modal-input" type="text" dir="auto" autocomplete="off"
-      placeholder="׳©׳ ׳”׳©׳™׳¨"
+      placeholder="שם השיר"
       onkeydown="if(event.key==='Enter')APP.confirmNewSong()">
     <div class="modal-actions">
-      <div class="modal-cancel" onclick="APP.cancelNewSong()">׳‘׳™׳˜׳•׳</div>
-      <div class="modal-confirm" onclick="APP.confirmNewSong()">׳¦׳•׳¨ ׳©׳™׳¨</div>
+      <div class="modal-cancel" onclick="APP.cancelNewSong()">ביטול</div>
+      <div class="modal-confirm" onclick="APP.confirmNewSong()">צור שיר</div>
     </div>
   </div>
 </div>
@@ -919,8 +919,8 @@ button, input { font-family:inherit; }
   <div class="search-overlay">
     <div class="search-hdr">
       <input id="searchInput" class="search-input" type="search" dir="rtl" autocomplete="off"
-        placeholder="׳—׳™׳₪׳•׳© ׳©׳™׳¨׳™׳..." oninput="APP.filterSongs(this.value)">
-      <span class="search-cancel" onclick="APP.closeSearch()">׳‘׳™׳˜׳•׳</span>
+        placeholder="חיפוש שירים..." oninput="APP.filterSongs(this.value)">
+      <span class="search-cancel" onclick="APP.closeSearch()">ביטול</span>
     </div>
     <div id="searchResults" style="overflow-y:auto;flex:1;padding:4px 0"></div>
   </div>
@@ -931,44 +931,44 @@ button, input { font-family:inherit; }
   <div class="sheet-ov" onclick="APP.closeSongSheet()">
     <div class="sheet-pn" onclick="event.stopPropagation()">
       <div class="sheet-drag"></div>
-      <div class="sheet-title" id="sheetSongTitle">׳”׳’׳“׳¨׳•׳× ׳©׳™׳¨</div>
-      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">׳¡׳•׳׳</span></div>
+      <div class="sheet-title" id="sheetSongTitle">הגדרות שיר</div>
+      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">סולם</span></div>
       <div class="key-grid" id="keyGrid"></div>
-      <div class="sheet-row" style="border-bottom:none;padding-bottom:0"><span class="sheet-lbl">׳¡׳˜׳˜׳•׳¡</span></div>
+      <div class="sheet-row" style="border-bottom:none;padding-bottom:0"><span class="sheet-lbl">סטטוס</span></div>
       <div class="status-row">
-        <div class="status-btn" id="st-draft" onclick="APP.setSheetStatus('draft')">׳˜׳™׳•׳˜׳”</div>
-        <div class="status-btn" id="st-wip" onclick="APP.setSheetStatus('wip')">׳‘׳›׳×׳™׳‘׳”</div>
-        <div class="status-btn" id="st-done" onclick="APP.setSheetStatus('done')">׳’׳׳•׳¨</div>
+        <div class="status-btn" id="st-draft" onclick="APP.setSheetStatus('draft')">טיוטה</div>
+        <div class="status-btn" id="st-wip" onclick="APP.setSheetStatus('wip')">בכתיבה</div>
+        <div class="status-btn" id="st-done" onclick="APP.setSheetStatus('done')">גמור</div>
       </div>
       <div class="sheet-row">
         <span>BPM</span>
         <div class="num-ctrl">
-          <div class="num-btn" onclick="APP.adjustBpm(-5)">גˆ’</div>
-          <span class="num-val" id="bpmVal">ג€”</span>
+          <div class="num-btn" onclick="APP.adjustBpm(-5)">−</div>
+          <span class="num-val" id="bpmVal">—</span>
           <div class="num-btn" onclick="APP.adjustBpm(5)">+</div>
         </div>
       </div>
       <div class="sheet-row">
-        <span>׳§׳₪׳•</span>
+        <span>קפו</span>
         <div class="num-ctrl">
-          <div class="num-btn" onclick="APP.adjustCapo(-1)">גˆ’</div>
+          <div class="num-btn" onclick="APP.adjustCapo(-1)">−</div>
           <span class="num-val" id="capoVal">0</span>
           <div class="num-btn" onclick="APP.adjustCapo(1)">+</div>
         </div>
       </div>
       <div class="sheet-row" onclick="APP.togglePinInSheet()" style="cursor:pointer">
-        <span>׳ ׳¢׳™׳¦׳”</span>
-        <span id="pinToggleIco" style="font-size:.85rem;color:var(--t2)">ג–¡</span>
+        <span>נעיצה</span>
+        <span id="pinToggleIco" style="font-size:.85rem;color:var(--t2)">☐</span>
       </div>
-      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">׳›׳•׳×׳‘ ׳׳™׳׳™׳</span></div>
-      <div style="padding:0 16px 10px"><input class="sheet-text-input" id="sheetWriter" dir="rtl" placeholder="׳©׳ ׳”׳›׳•׳×׳‘ (׳׳•׳₪׳¦׳™׳•׳ ׳׳™)..."></div>
-      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">׳׳׳—׳™׳</span></div>
-      <div style="padding:0 16px 12px"><input class="sheet-text-input" id="sheetComposer" dir="rtl" placeholder="׳©׳ ׳”׳׳׳—׳™׳ (׳׳•׳₪׳¦׳™׳•׳ ׳׳™)..."></div>
+      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">כותב מילים</span></div>
+      <div style="padding:0 16px 10px"><input class="sheet-text-input" id="sheetWriter" dir="rtl" placeholder="שם הכותב (אופציונלי)..."></div>
+      <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">מלחין</span></div>
+      <div style="padding:0 16px 12px"><input class="sheet-text-input" id="sheetComposer" dir="rtl" placeholder="שם המלחין (אופציונלי)..."></div>
       <div class="sheet-row" style="border-bottom:none;padding-bottom:4px"><span class="sheet-lbl">תגיות</span></div>
       <div style="padding:0 16px 12px"><input class="sheet-text-input" id="sheetTags" dir="rtl" placeholder="רוק, פופ, חגיגי (מופרד בפסיקים)..."></div>
       <div class="sheet-action-row">
-        <div class="sheet-btn sheet-btn-primary" onclick="APP.saveSongSheet()">׳©׳׳•׳¨</div>
-        <div class="sheet-btn sheet-btn-danger" onclick="APP.confirmDeleteFromSheet()">׳׳—׳§ ׳©׳™׳¨</div>
+        <div class="sheet-btn sheet-btn-primary" onclick="APP.saveSongSheet()">שמור</div>
+        <div class="sheet-btn sheet-btn-danger" onclick="APP.confirmDeleteFromSheet()">מחק שיר</div>
       </div>
     </div>
   </div>
@@ -979,7 +979,7 @@ button, input { font-family:inherit; }
   <div class="sheet-ov" onclick="APP.closeBlockTypeSheet()">
     <div class="sheet-pn" onclick="event.stopPropagation()">
       <div class="sheet-drag"></div>
-      <div class="sheet-title">׳¡׳•׳’ ׳§׳˜׳¢</div>
+      <div class="sheet-title">סוג קטע</div>
       <div class="type-grid" id="typeGrid"></div>
       <div style="height:8px"></div>
     </div>
@@ -993,8 +993,8 @@ button, input { font-family:inherit; }
       <div class="sheet-drag"></div>
       <div id="confirmMsg" style="font-size:.9rem;text-align:center;padding:10px 0 14px;color:var(--text)"></div>
       <div class="sheet-action-row" style="padding:0">
-        <div class="sheet-btn sheet-btn-ghost" onclick="APP.closeConfirm()">׳‘׳™׳˜׳•׳</div>
-        <div class="sheet-btn sheet-btn-danger" id="confirmYesBtn">׳׳™׳©׳•׳¨</div>
+        <div class="sheet-btn sheet-btn-ghost" onclick="APP.closeConfirm()">ביטול</div>
+        <div class="sheet-btn sheet-btn-danger" id="confirmYesBtn">מחק שיר</div>
       </div>
     </div>
   </div>

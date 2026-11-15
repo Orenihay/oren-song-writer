@@ -359,6 +359,7 @@ var EDITOR = (function () {
     _buildChordPicker();
     _initAllChordDragTouch();
     _initBlockDragTouch();
+    _initLineDragTouch();
   }
 
   function _renderBlock(blk, bi) {
@@ -647,6 +648,61 @@ var EDITOR = (function () {
   function _initAllChordDragTouch() {
     Array.from(document.querySelectorAll('.word-chips-row')).forEach(function (row) {
       _initChordDragTouch(row);
+    });
+  }
+
+  // ── Line drag touch support ───────────────────────────────────────────
+  function _initLineDragTouch() {
+    Array.from(document.querySelectorAll('.line-pair')).forEach(function (linePair) {
+      var bi = parseInt(linePair.dataset.bi, 10);
+      var li = parseInt(linePair.dataset.li, 10);
+      var handle = linePair.querySelector('.line-drag-handle');
+      if (!handle) return;
+      var touchSrc = null, touchClone = null;
+
+      handle.addEventListener('touchstart', function (e) {
+        touchSrc = { bi: bi, li: li, pair: linePair };
+        touchClone = document.createElement('div');
+        touchClone.style.cssText = 'position:fixed;opacity:.7;pointer-events:none;z-index:999;padding:3px 8px;border-radius:4px;background:var(--surf);border:1px solid var(--em);color:var(--em);font-size:.75rem;';
+        touchClone.textContent = '⠿';
+        document.body.appendChild(touchClone);
+        linePair.classList.add('line-dragging');
+        var t0 = e.touches[0];
+        touchClone.style.left = t0.clientX + 10 + 'px';
+        touchClone.style.top  = (t0.clientY - 20) + 'px';
+      }, { passive: true });
+
+      handle.addEventListener('touchmove', function (e) {
+        if (!touchSrc) return;
+        e.preventDefault();
+        var t0 = e.touches[0];
+        if (touchClone) { touchClone.style.left = t0.clientX + 10 + 'px'; touchClone.style.top = (t0.clientY - 20) + 'px'; }
+        if (touchClone) touchClone.style.display = 'none';
+        var el = document.elementFromPoint(t0.clientX, t0.clientY);
+        if (touchClone) touchClone.style.display = '';
+        var targetPair = el && el.closest('.line-pair');
+        document.querySelectorAll('.line-drag-over').forEach(function (p) { p.classList.remove('line-drag-over'); });
+        if (targetPair && targetPair !== linePair) {
+          var tBi = parseInt(targetPair.dataset.bi, 10);
+          if (tBi === bi) targetPair.classList.add('line-drag-over');
+        }
+      }, { passive: false });
+
+      handle.addEventListener('touchend', function (e) {
+        if (touchClone) { touchClone.remove(); touchClone = null; }
+        linePair.classList.remove('line-dragging');
+        document.querySelectorAll('.line-drag-over').forEach(function (p) { p.classList.remove('line-drag-over'); });
+        if (!touchSrc) return;
+        var src = touchSrc; touchSrc = null;
+        var t0 = e.changedTouches[0];
+        var el = document.elementFromPoint(t0.clientX, t0.clientY);
+        var targetPair = el && el.closest('.line-pair');
+        if (targetPair && targetPair !== linePair) {
+          var tBi = parseInt(targetPair.dataset.bi, 10);
+          var tLi = parseInt(targetPair.dataset.li, 10);
+          if (tBi === src.bi && tLi !== src.li) _moveLine(src.bi, src.li, tBi, tLi);
+        }
+      });
     });
   }
 
