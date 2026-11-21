@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "song-writer-preview",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8787", "--directory", "dist"],
+      "port": 8787,
+      "url": "http://localhost:8787/Index.html"
+    }
+  ]
+}

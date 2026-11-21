@@ -14,6 +14,7 @@ var EDITOR = (function () {
   // ── Utility ────────────────────────────────────────────────────────────
   function _genId() { return 'b_' + Math.random().toString(36).slice(2, 9); }
   function _docCopy() { return JSON.parse(JSON.stringify(_doc)); }
+  var _isTouch = window.matchMedia('(hover:none)').matches;
 
   function _esc(s) {
     return String(s || '')
@@ -317,6 +318,7 @@ var EDITOR = (function () {
         '<div class="hdr-icon-btn" id="memoBtn" onclick="APP.openMemoPanel()" title="הקלטה קולית">' +
           '<svg width="14" height="14"><use href="#ico-mic"/></svg>' +
         '</div>' +
+        '<div class="nav-row-break" aria-hidden="true"></div>' +
         '<span class="collapse-all-btn" id="collapseAllBtn" onclick="EDITOR.collapseAll()">קפל הכל</span>' +
       '</div>' +
       '<div class="sync-row"><span class="sync-dot" id="syncDot"></span><span id="syncStatus">שמור</span></div>' +
@@ -375,7 +377,7 @@ var EDITOR = (function () {
     var isCollapsed = !!_collapsedBlocks[blk.id];
     return '<div class="block' + (isCollapsed ? ' collapsed' : '') + '" data-bi="' + bi + '" data-block-id="' + blk.id + '"' +
       ' style="border-left-color:' + c.col + '"' +
-      ' draggable="true"' +
+      (!_isTouch ? ' draggable="true"' : '') +
       ' ondragstart="EDITOR.blockDragStart(event,' + bi + ')"' +
       ' ondragend="EDITOR.blockDragEnd(event)"' +
       ' ondragover="EDITOR.blockDragOver(event,' + bi + ')"' +
@@ -441,7 +443,7 @@ var EDITOR = (function () {
 
   function _renderLine(ln, bi, li) {
     return '<div class="line-pair" data-bi="' + bi + '" data-li="' + li + '"' +
-      ' draggable="true"' +
+      (!_isTouch ? ' draggable="true"' : '') +
       ' ondragstart="EDITOR.lineDragStart(event,' + bi + ',' + li + ')"' +
       ' ondragend="EDITOR.lineDragEnd(event)"' +
       ' ondragover="EDITOR.lineDragOver(event,' + bi + ',' + li + ')"' +
